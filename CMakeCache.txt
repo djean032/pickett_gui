@@ -196,7 +196,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=example
+CMAKE_PROJECT_NAME:STATIC=pickett_gui
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION:STATIC=1.0
@@ -365,6 +365,15 @@ example_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 example_SOURCE_DIR:STATIC=/home/dairen/Projects/pickett_gui
+
+//Value Computed by CMake
+pickett_gui_BINARY_DIR:STATIC=/home/dairen/Projects/pickett_gui
+
+//Value Computed by CMake
+pickett_gui_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+pickett_gui_SOURCE_DIR:STATIC=/home/dairen/Projects/pickett_gui
 
 
 ########################

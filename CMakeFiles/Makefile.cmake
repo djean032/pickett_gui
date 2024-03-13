@@ -267,13 +267,13 @@ set(CMAKE_MAKEFILE_OUTPUTS
 
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
-  "CMakeFiles/example_autogen.dir/AutogenInfo.json"
+  "CMakeFiles/pickett_gui_autogen.dir/AutogenInfo.json"
   ".qt/QtDeploySupport.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/example.dir/DependInfo.cmake"
-  "CMakeFiles/example_autogen.dir/DependInfo.cmake"
+  "CMakeFiles/pickett_gui.dir/DependInfo.cmake"
+  "CMakeFiles/pickett_gui_autogen.dir/DependInfo.cmake"
   )

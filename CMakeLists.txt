@@ -11,15 +11,10 @@ include(QtCommon)
 
 # Basic information about project
 
-project(example VERSION 1.0)
+project(pickett_gui VERSION 1.0)
 
 # Set PROJECT_VERSION_PATCH and PROJECT_VERSION_TWEAK to 0 if not present, needed by add_project_meta
 fix_project_version()
-
-# Set additional project information
-set(COMPANY "Example")
-set(COPYRIGHT "Copyright (c) 2014 Vincent Lee. All rights reserved.")
-set(IDENTIFIER "com.example.Example")
 
 set(SOURCE_FILES
     src/main.cpp
@@ -28,7 +23,7 @@ set(SOURCE_FILES
 
 add_project_meta(META_FILES_TO_INCLUDE)
 
-set(RESOURCE_FILES example.qrc)
+set(RESOURCE_FILES pickett_gui.qrc)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 

@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/dairen/Projects/pickett_gui
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/example.dir/all
+all: CMakeFiles/pickett_gui.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,61 +71,61 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/example.dir/clean
-clean: CMakeFiles/example_autogen.dir/clean
+clean: CMakeFiles/pickett_gui.dir/clean
+clean: CMakeFiles/pickett_gui_autogen.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/example.dir
+# Target rules for target CMakeFiles/pickett_gui.dir
 
 # All Build rule for target.
-CMakeFiles/example.dir/all: CMakeFiles/example_autogen.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dairen/Projects/pickett_gui/CMakeFiles --progress-num=1,2,3,4 "Built target example"
-.PHONY : CMakeFiles/example.dir/all
+CMakeFiles/pickett_gui.dir/all: CMakeFiles/pickett_gui_autogen.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dairen/Projects/pickett_gui/CMakeFiles --progress-num=1,2 "Built target pickett_gui"
+.PHONY : CMakeFiles/pickett_gui.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/example.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/dairen/Projects/pickett_gui/CMakeFiles 5
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/example.dir/all
+CMakeFiles/pickett_gui.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/dairen/Projects/pickett_gui/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/pickett_gui.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dairen/Projects/pickett_gui/CMakeFiles 0
-.PHONY : CMakeFiles/example.dir/rule
+.PHONY : CMakeFiles/pickett_gui.dir/rule
 
 # Convenience name for target.
-example: CMakeFiles/example.dir/rule
-.PHONY : example
+pickett_gui: CMakeFiles/pickett_gui.dir/rule
+.PHONY : pickett_gui
 
 # clean rule for target.
-CMakeFiles/example.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/clean
-.PHONY : CMakeFiles/example.dir/clean
+CMakeFiles/pickett_gui.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/clean
+.PHONY : CMakeFiles/pickett_gui.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/example_autogen.dir
+# Target rules for target CMakeFiles/pickett_gui_autogen.dir
 
 # All Build rule for target.
-CMakeFiles/example_autogen.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example_autogen.dir/build.make CMakeFiles/example_autogen.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example_autogen.dir/build.make CMakeFiles/example_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dairen/Projects/pickett_gui/CMakeFiles --progress-num=5 "Built target example_autogen"
-.PHONY : CMakeFiles/example_autogen.dir/all
+CMakeFiles/pickett_gui_autogen.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui_autogen.dir/build.make CMakeFiles/pickett_gui_autogen.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui_autogen.dir/build.make CMakeFiles/pickett_gui_autogen.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dairen/Projects/pickett_gui/CMakeFiles --progress-num=3 "Built target pickett_gui_autogen"
+.PHONY : CMakeFiles/pickett_gui_autogen.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/example_autogen.dir/rule: cmake_check_build_system
+CMakeFiles/pickett_gui_autogen.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dairen/Projects/pickett_gui/CMakeFiles 1
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/example_autogen.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/pickett_gui_autogen.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dairen/Projects/pickett_gui/CMakeFiles 0
-.PHONY : CMakeFiles/example_autogen.dir/rule
+.PHONY : CMakeFiles/pickett_gui_autogen.dir/rule
 
 # Convenience name for target.
-example_autogen: CMakeFiles/example_autogen.dir/rule
-.PHONY : example_autogen
+pickett_gui_autogen: CMakeFiles/pickett_gui_autogen.dir/rule
+.PHONY : pickett_gui_autogen
 
 # clean rule for target.
-CMakeFiles/example_autogen.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example_autogen.dir/build.make CMakeFiles/example_autogen.dir/clean
-.PHONY : CMakeFiles/example_autogen.dir/clean
+CMakeFiles/pickett_gui_autogen.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui_autogen.dir/build.make CMakeFiles/pickett_gui_autogen.dir/clean
+.PHONY : CMakeFiles/pickett_gui_autogen.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

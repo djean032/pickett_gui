@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o -o pickett_gui  -Wl,-rpath,/home/dairen/6.6.0/gcc_64/lib: /home/dairen/6.6.0/gcc_64/lib/libQt6Widgets.so.6.6.0 /home/dairen/6.6.0/gcc_64/lib/libQt6Gui.so.6.6.0 /home/dairen/6.6.0/gcc_64/lib/libQt6Core.so.6.6.0 /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so 

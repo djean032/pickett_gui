@@ -162,102 +162,54 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named example
+# Target rules for targets named pickett_gui
 
 # Build rule for target.
-example: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 example
-.PHONY : example
+pickett_gui: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pickett_gui
+.PHONY : pickett_gui
 
 # fast build rule for target.
-example/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/build
-.PHONY : example/fast
+pickett_gui/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/build
+.PHONY : pickett_gui/fast
 
 #=============================================================================
-# Target rules for targets named example_autogen
+# Target rules for targets named pickett_gui_autogen
 
 # Build rule for target.
-example_autogen: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 example_autogen
-.PHONY : example_autogen
+pickett_gui_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pickett_gui_autogen
+.PHONY : pickett_gui_autogen
 
 # fast build rule for target.
-example_autogen/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example_autogen.dir/build.make CMakeFiles/example_autogen.dir/build
-.PHONY : example_autogen/fast
+pickett_gui_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui_autogen.dir/build.make CMakeFiles/pickett_gui_autogen.dir/build
+.PHONY : pickett_gui_autogen/fast
 
-example_autogen/mocs_compilation.o: example_autogen/mocs_compilation.cpp.o
-.PHONY : example_autogen/mocs_compilation.o
-
-# target to build an object file
-example_autogen/mocs_compilation.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/example_autogen/mocs_compilation.cpp.o
-.PHONY : example_autogen/mocs_compilation.cpp.o
-
-example_autogen/mocs_compilation.i: example_autogen/mocs_compilation.cpp.i
-.PHONY : example_autogen/mocs_compilation.i
-
-# target to preprocess a source file
-example_autogen/mocs_compilation.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/example_autogen/mocs_compilation.cpp.i
-.PHONY : example_autogen/mocs_compilation.cpp.i
-
-example_autogen/mocs_compilation.s: example_autogen/mocs_compilation.cpp.s
-.PHONY : example_autogen/mocs_compilation.s
-
-# target to generate assembly for a file
-example_autogen/mocs_compilation.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/example_autogen/mocs_compilation.cpp.s
-.PHONY : example_autogen/mocs_compilation.cpp.s
-
-src/main.o: src/main.cpp.o
-.PHONY : src/main.o
+pickett_gui_autogen/mocs_compilation.o: pickett_gui_autogen/mocs_compilation.cpp.o
+.PHONY : pickett_gui_autogen/mocs_compilation.o
 
 # target to build an object file
-src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
+pickett_gui_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o
+.PHONY : pickett_gui_autogen/mocs_compilation.cpp.o
 
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
-
-src/mainwindow.o: src/mainwindow.cpp.o
-.PHONY : src/mainwindow.o
-
-# target to build an object file
-src/mainwindow.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/mainwindow.cpp.o
-.PHONY : src/mainwindow.cpp.o
-
-src/mainwindow.i: src/mainwindow.cpp.i
-.PHONY : src/mainwindow.i
+pickett_gui_autogen/mocs_compilation.i: pickett_gui_autogen/mocs_compilation.cpp.i
+.PHONY : pickett_gui_autogen/mocs_compilation.i
 
 # target to preprocess a source file
-src/mainwindow.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/mainwindow.cpp.i
-.PHONY : src/mainwindow.cpp.i
+pickett_gui_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.i
+.PHONY : pickett_gui_autogen/mocs_compilation.cpp.i
 
-src/mainwindow.s: src/mainwindow.cpp.s
-.PHONY : src/mainwindow.s
+pickett_gui_autogen/mocs_compilation.s: pickett_gui_autogen/mocs_compilation.cpp.s
+.PHONY : pickett_gui_autogen/mocs_compilation.s
 
 # target to generate assembly for a file
-src/mainwindow.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/example.dir/build.make CMakeFiles/example.dir/src/mainwindow.cpp.s
-.PHONY : src/mainwindow.cpp.s
+pickett_gui_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.s
+.PHONY : pickett_gui_autogen/mocs_compilation.cpp.s
 
 # Help Target
 help:
@@ -271,17 +223,11 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... example_autogen"
-	@echo "... example"
-	@echo "... example_autogen/mocs_compilation.o"
-	@echo "... example_autogen/mocs_compilation.i"
-	@echo "... example_autogen/mocs_compilation.s"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
-	@echo "... src/mainwindow.o"
-	@echo "... src/mainwindow.i"
-	@echo "... src/mainwindow.s"
+	@echo "... pickett_gui_autogen"
+	@echo "... pickett_gui"
+	@echo "... pickett_gui_autogen/mocs_compilation.o"
+	@echo "... pickett_gui_autogen/mocs_compilation.i"
+	@echo "... pickett_gui_autogen/mocs_compilation.s"
 .PHONY : help
 
 
