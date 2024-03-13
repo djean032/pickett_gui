@@ -1,23 +1,22 @@
 #ifndef mainwindow_h
 #define mainwindow_h
 
-#include <QMainWindow>
-#include <QScopedPointer>
+#include <QtCore/QScopedPointer>
+#include <QtWidgets/QMainWindow>
 
-namespace Ui
-{
-    class MainWindow;
+namespace Ui {
+class MainWindow;
 }
 
 class MainWindow : public QMainWindow {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = 0);
-    virtual ~MainWindow();
+  MainWindow(QWidget *parent = 0);
+  virtual ~MainWindow();
 
 private:
-    QScopedPointer<Ui::MainWindow> ui;
+  QScopedPointer<Ui::MainWindow> ui;
 };
 
 #endif
