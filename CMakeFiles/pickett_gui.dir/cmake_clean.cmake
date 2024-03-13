@@ -4,6 +4,10 @@ file(REMOVE_RECURSE
   "pickett_gui_autogen"
   "CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o"
   "CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o.d"
+  "CMakeFiles/pickett_gui.dir/src/main.cpp.o"
+  "CMakeFiles/pickett_gui.dir/src/main.cpp.o.d"
+  "CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.o"
+  "CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.o.d"
   "pickett_gui"
   "pickett_gui.pdb"
 )

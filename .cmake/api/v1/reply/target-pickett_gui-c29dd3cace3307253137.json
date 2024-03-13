@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "example"
+			"path" : "pickett_gui"
 		}
 	],
 	"backtrace" : 1,
@@ -26,19 +26,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 37,
+				"line" : 32,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 51,
+				"line" : 46,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 49,
+				"line" : 44,
 				"parent" : 0
 			}
 		]
@@ -82,7 +82,7 @@
 				},
 				{
 					"backtrace" : 0,
-					"path" : "/home/dairen/Projects/pickett_gui/example_autogen/include"
+					"path" : "/home/dairen/Projects/pickett_gui/pickett_gui_autogen/include"
 				},
 				{
 					"backtrace" : 3,
@@ -132,10 +132,10 @@
 	[
 		{
 			"backtrace" : 0,
-			"id" : "example_autogen::@6890427a1f51a3e7e1df"
+			"id" : "pickett_gui_autogen::@6890427a1f51a3e7e1df"
 		}
 	],
-	"id" : "example::@6890427a1f51a3e7e1df",
+	"id" : "pickett_gui::@6890427a1f51a3e7e1df",
 	"install" : 
 	{
 		"destinations" : 
@@ -186,8 +186,8 @@
 		],
 		"language" : "CXX"
 	},
-	"name" : "example",
-	"nameOnDisk" : "example",
+	"name" : "pickett_gui",
+	"nameOnDisk" : "pickett_gui",
 	"paths" : 
 	{
 		"build" : ".",
@@ -218,7 +218,7 @@
 			"backtrace" : 0,
 			"compileGroupIndex" : 0,
 			"isGenerated" : true,
-			"path" : "example_autogen/mocs_compilation.cpp",
+			"path" : "pickett_gui_autogen/mocs_compilation.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
@@ -235,7 +235,7 @@
 		},
 		{
 			"backtrace" : 1,
-			"path" : "example.qrc",
+			"path" : "pickett_gui.qrc",
 			"sourceGroupIndex" : 1
 		}
 	],

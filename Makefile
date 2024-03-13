@@ -211,6 +211,54 @@ pickett_gui_autogen/mocs_compilation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.s
 .PHONY : pickett_gui_autogen/mocs_compilation.cpp.s
 
+src/main.o: src/main.cpp.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
+
+src/mainwindow.o: src/mainwindow.cpp.o
+.PHONY : src/mainwindow.o
+
+# target to build an object file
+src/mainwindow.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.o
+.PHONY : src/mainwindow.cpp.o
+
+src/mainwindow.i: src/mainwindow.cpp.i
+.PHONY : src/mainwindow.i
+
+# target to preprocess a source file
+src/mainwindow.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.i
+.PHONY : src/mainwindow.cpp.i
+
+src/mainwindow.s: src/mainwindow.cpp.s
+.PHONY : src/mainwindow.s
+
+# target to generate assembly for a file
+src/mainwindow.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/pickett_gui.dir/build.make CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.s
+.PHONY : src/mainwindow.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -228,6 +276,12 @@ help:
 	@echo "... pickett_gui_autogen/mocs_compilation.o"
 	@echo "... pickett_gui_autogen/mocs_compilation.i"
 	@echo "... pickett_gui_autogen/mocs_compilation.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
+	@echo "... src/mainwindow.o"
+	@echo "... src/mainwindow.i"
+	@echo "... src/mainwindow.s"
 .PHONY : help
 
 

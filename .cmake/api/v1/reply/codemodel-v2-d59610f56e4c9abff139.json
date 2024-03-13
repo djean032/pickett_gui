@@ -7,7 +7,7 @@
 				{
 					"build" : ".",
 					"hasInstallRule" : true,
-					"jsonFile" : "directory-.-38e5c979cf0928fbc6fa.json",
+					"jsonFile" : "directory-.-a54b8042556a4700bebf.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.16"
@@ -29,7 +29,7 @@
 					[
 						0
 					],
-					"name" : "example",
+					"name" : "pickett_gui",
 					"targetIndexes" : 
 					[
 						0,
@@ -41,16 +41,16 @@
 			[
 				{
 					"directoryIndex" : 0,
-					"id" : "example::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-example-3e31337ec7a7cd63fd3d.json",
-					"name" : "example",
+					"id" : "pickett_gui::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pickett_gui-c29dd3cace3307253137.json",
+					"name" : "pickett_gui",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
-					"id" : "example_autogen::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-example_autogen-ce81b8564e3fc95eebdf.json",
-					"name" : "example_autogen",
+					"id" : "pickett_gui_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pickett_gui_autogen-df75af1ae530d3be8709.json",
+					"name" : "pickett_gui_autogen",
 					"projectIndex" : 0
 				}
 			]

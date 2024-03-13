@@ -18,9 +18,9 @@
 	{
 		"name" : "QtInternalTargets"
 	},
-	"id" : "example_autogen::@6890427a1f51a3e7e1df",
+	"id" : "pickett_gui_autogen::@6890427a1f51a3e7e1df",
 	"isGeneratorProvided" : true,
-	"name" : "example_autogen",
+	"name" : "pickett_gui_autogen",
 	"paths" : 
 	{
 		"build" : ".",
@@ -48,13 +48,13 @@
 		{
 			"backtrace" : 0,
 			"isGenerated" : true,
-			"path" : "CMakeFiles/example_autogen",
+			"path" : "CMakeFiles/pickett_gui_autogen",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 0,
 			"isGenerated" : true,
-			"path" : "CMakeFiles/example_autogen.rule",
+			"path" : "CMakeFiles/pickett_gui_autogen.rule",
 			"sourceGroupIndex" : 1
 		}
 	],

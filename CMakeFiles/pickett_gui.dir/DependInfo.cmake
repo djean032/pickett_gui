@@ -9,6 +9,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/dairen/Projects/pickett_gui/pickett_gui_autogen/mocs_compilation.cpp" "CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/pickett_gui.dir/pickett_gui_autogen/mocs_compilation.cpp.o.d"
+  "/home/dairen/Projects/pickett_gui/src/main.cpp" "CMakeFiles/pickett_gui.dir/src/main.cpp.o" "gcc" "CMakeFiles/pickett_gui.dir/src/main.cpp.o.d"
+  "/home/dairen/Projects/pickett_gui/src/mainwindow.cpp" "CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.o" "gcc" "CMakeFiles/pickett_gui.dir/src/mainwindow.cpp.o.d"
   )
 
 # Targets to which this target links.

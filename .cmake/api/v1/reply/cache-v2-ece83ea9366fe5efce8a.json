@@ -1131,7 +1131,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "example"
+			"value" : "pickett_gui"
 		},
 		{
 			"name" : "CMAKE_PROJECT_VERSION",
@@ -6607,6 +6607,42 @@
 		},
 		{
 			"name" : "example_SOURCE_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/dairen/Projects/pickett_gui"
+		},
+		{
+			"name" : "pickett_gui_BINARY_DIR",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "/home/dairen/Projects/pickett_gui"
+		},
+		{
+			"name" : "pickett_gui_IS_TOP_LEVEL",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "Value Computed by CMake"
+				}
+			],
+			"type" : "STATIC",
+			"value" : "ON"
+		},
+		{
+			"name" : "pickett_gui_SOURCE_DIR",
 			"properties" : 
 			[
 				{
