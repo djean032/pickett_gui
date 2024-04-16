@@ -6,6 +6,7 @@ class MyWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
+        self.setWindowTitle('Pickett')
         self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
 
         self.button = QtWidgets.QPushButton("Click me!")
