@@ -1,16 +1,16 @@
 import sys
-import random
 from PySide6 import QtCore, QtWidgets, QtGui
+
 
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle('Pickett')
-        self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
+        self.setWindowTitle("Pickett")
+        self.score = 0
 
         self.button = QtWidgets.QPushButton("Click me!")
-        self.text = QtWidgets.QLabel("Hello World", alignment=QtCore.Qt.AlignCenter)
+        self.text = QtWidgets.QLabel("0", alignment=QtCore.Qt.AlignCenter)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.text)
@@ -20,13 +20,15 @@ class MyWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def magic(self):
-        self.text.setText(random.choice(self.hello))
+        self.score += 1
+        self.text.setText(str(self.score))
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     widget = MyWidget()
-    widget.resize(800, 600)
+    widget.resize(1600, 1200)
     widget.show()
 
     sys.exit(app.exec())
