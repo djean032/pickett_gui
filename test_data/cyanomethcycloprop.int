@@ -1,0 +1,26 @@
+(3-Cyano)Methylenecyclopropane 
+   0      00005   267816.   0 120     -8.   -8.     750.0   292.
+     1    0.0000      / a dipole moment gs
+     2    0.0000      / b dipole moment gs
+     3    0.0000      / c dipole moment gs
+  1011    3.6924      / a dipole moment 27
+  1012    1.4958      / b dipole moment 27
+  1013    0.9398      / c dipole moment 27
+  2021    3.6924      / a dipole moment 26
+  2022    1.4958      / b dipole moment 26
+  2023    0.9398      / c dipole moment 26
+  3031    3.6924      / a dipole moment 2_27
+  3032    1.4958      / b dipole moment 2_27
+  3033    0.9398      / c dipole moment 2_27
+  4041    3.6924      / a dipole moment 25
+  4042    1.4958      / b dipole moment 25
+  4043    0.9398      / c dipole moment 25
+  5051    3.6924      / a dipole moment 24
+  5052    1.4958      / b dipole moment 24
+  5053    0.9398      / c dipole moment 24
+  6061    3.6924      / a dipole moment 3_27
+  6062    1.4958      / b dipole moment 3_27
+  6063    0.9398      / c dipole moment 3_27
+  7071    3.6924      / a dipole moment 3_27
+  7072    1.4958      / b dipole moment 3_27
+  7073    0.9398      / c dipole moment 3_27
