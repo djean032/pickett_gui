@@ -220,7 +220,8 @@ TYP	SYM	1/j,K1	Description
 9
 10
 11
-12	0
+12
+0
 1
 2
 3
@@ -230,17 +231,23 @@ TYP	SYM	1/j,K1	Description
 3
 0
 1-3
-any any 0
-1
-2
-3
-0
-1
-2
-3
-any any any 1-3
 any
-any	0
+any
+0
+1
+2
+3
+0
+1
+2
+3
+any
+any
+any
+1-3
+any
+any
+0
 0
 1
 1
@@ -249,7 +256,10 @@ any	0
 1
 1
 2
-TYP=1 TYP=0 TYP=0 0
+TYP=1
+TYP=0
+TYP=0
+0
 0
 1
 1
@@ -257,7 +267,13 @@ TYP=1 TYP=0 TYP=0 0
 2
 3
 3
-TYP=0 TYP=0 TYP=0 TYP=0 TYP=2 TYP=2	magnetic dipole [N, S, I]
+TYP=0
+TYP=0
+TYP=0
+TYP=0
+TYP=2
+TYP=2
+magnetic dipole [N, S, I]
 a dipole, ¢a if I1=0
 b dipole, ¢b if I1=0
 c dipole, ¢c if I1=0

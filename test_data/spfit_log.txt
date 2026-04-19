@@ -1,0 +1,92 @@
+cyanomethcycloprop_bak.par
+cyanomethcycloprop_bak.lin
+cyanomethcycloprop_bak.fit
+cyanomethcycloprop_bak.bak
+cyanomethcycloprop_bak.var
+(3-Cyano)Methylenecyclopropane                          Sun Apr 19 08:13:08 2026
+
+LINES REQUESTED= 2506 NUMBER OF PARAMETERS=201 NUMBER OF ITERATIONS= 15
+  MARQUARDT PARAMETER = 0.0000E+00 max (OBS-CALC)/ERROR =1.0000E+06
+Reading Line 100
+Reading Line 200
+Reading Line 300
+Reading Line 400
+Reading Line 500
+Reading Line 600
+Reading Line 700
+Reading Line 800
+Reading Line 900
+Reading Line 1000
+Reading Line 1100
+Reading Line 1200
+Reading Line 1300
+Reading Line 1400
+Reading Line 1500
+Reading Line 1600
+Reading Line 1700
+Reading Line 1800
+Reading Line 1900
+Reading Line 2000
+Reading Line 2100
+Reading Line 2200
+Reading Line 2300
+Reading Line 2400
+Reading Line 2500
+Converting Line 50
+Converting Line 100
+Converting Line 150
+Converting Line 200
+Converting Line 250
+Converting Line 300
+Converting Line 350
+Converting Line 400
+Converting Line 450
+Converting Line 500
+Converting Line 550
+Converting Line 600
+Converting Line 650
+Converting Line 700
+Converting Line 750
+Converting Line 800
+Converting Line 850
+Converting Line 900
+Converting Line 950
+Converting Line 1000
+Converting Line 1050
+Converting Line 1100
+Converting Line 1150
+Converting Line 1200
+Converting Line 1250
+Converting Line 1300
+Converting Line 1350
+Converting Line 1400
+Converting Line 1450
+Converting Line 1500
+Converting Line 1550
+Converting Line 1600
+Converting Line 1650
+Converting Line 1700
+Converting Line 1750
+Converting Line 1800
+Converting Line 1850
+Converting Line 1900
+Converting Line 1950
+Converting Line 2000
+Converting Line 2050
+Converting Line 2100
+Converting Line 2150
+Converting Line 2200
+Converting Line 2250
+Converting Line 2300
+Converting Line 2350
+Converting Line 2400
+Converting Line 2450
+Converting Line 2500
+Converting Line 2506
+Finished Quantum  99
+MARQUARDT PARAMETER = 0, TRUST EXPANSION = 1.00
+ MICROWAVE AVG =       -0.001632 MHz, IR AVG =        0.00000
+ MICROWAVE RMS =        1.277876 MHz, IR RMS =        0.00000
+ END OF ITERATION  1 OLD, NEW RMS ERROR=       25.55752        25.55751
+(3-Cyano)Methylenecyclopropane                          Sun Apr 19 08:13:08 2026
+FIT COMPLETE

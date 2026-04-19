@@ -7,6 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Library with all parsers
 add_library(parsers
     src/parsers/lin_parser.cpp
+    src/parsers/cat_parser.cpp
+    src/parsers/par_parser.cpp
+    src/parsers/int_parser.cpp
+    src/parsers/fit_parser.cpp
 )
 
 target_include_directories(parsers PUBLIC src)
@@ -23,6 +27,10 @@ FetchContent_MakeAvailable(Catch2)
 # Test executable
 add_executable(test_parsers
     tests/test_lin_parser.cpp
+    tests/test_cat_parser.cpp
+    tests/test_par_parser.cpp
+    tests/test_int_parser.cpp
+    tests/test_fit_parser.cpp
 )
 
 target_link_libraries(test_parsers PRIVATE parsers Catch2::Catch2WithMain)

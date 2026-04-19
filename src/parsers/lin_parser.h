@@ -2,26 +2,52 @@
 #define LIN_PARSER_H
 
 #include <string>
+#include <utility>
 #include <vector>
-#include <istream>
 
 namespace pickett {
 
 struct LinRecord {
-    int qn[12];          // 12 quantum numbers (3 chars each, positions 1-36)
-    double freq;         // Frequency (MHz)
-    double err;          // Error
-    double wt;           // Weight
-    
-    LinRecord() : freq(0.0), err(0.0), wt(0.0) {
-        for (int i = 0; i < 12; ++i) qn[i] = 0;
-    }
+  int qn[12];  // 12 quantum numbers (3 chars each, positions 1-36)
+  double freq; // Frequency (MHz)
+  double err;  // Error
+  double wt;   // Weight
+
+  LinRecord() : freq(0.0), err(0.0), wt(0.0) {
+    for (int i = 0; i < 12; ++i)
+      qn[i] = 0;
+  }
+};
+
+struct LinParseResult {
+  std::vector<LinRecord> records;
+  std::vector<std::pair<int, std::string>> errors;  // line_number, message
+  bool success;  // false if critical error (file not found)
+
+  LinParseResult() : success(true) {}
 };
 
 class LinParser {
 public:
-    std::vector<LinRecord> parse(std::istream& input);
-    std::vector<LinRecord> parse_file(const std::string& filepath);
+  // Parse .lin file, returns result with records and any errors
+  static LinParseResult parse_file(const std::string &filepath);
+  
+  // Write .lin file from parsed data
+  // Returns true on success, false on failure with error message
+  static bool write(std::ostream& os, const LinParseResult& data, std::string& error);
+  static bool write_file(const std::string& filepath, const LinParseResult& data, 
+                         std::string& error);
+
+private:
+  // Parse integer safely without exceptions
+  static std::pair<int, std::string> parse_int_safe(const std::string &s);
+  // Parse double safely without exceptions
+  static std::pair<double, std::string> parse_double_safe(const std::string &s);
+  
+  // Format quantum number in I3 format (3 chars, right-justified, space-padded)
+  static std::string format_qn(int qn);
+  // Format double for LIN file (FREQ/ERR/WT in freeform)
+  static std::string format_double(double value, int precision);
 };
 
 } // namespace pickett

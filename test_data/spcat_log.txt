@@ -1,0 +1,52 @@
+cyanomethcycloprop_bak.int
+cyanomethcycloprop_bak.var
+cyanomethcycloprop_bak.out
+cyanomethcycloprop_bak.cat
+cyanomethcycloprop_bak.str
+cyanomethcycloprop_bak.egy
+(3-Cyano)Methylenecyclopropane                          Sun Apr 19 08:12:35 2026
+ STARTING QUANTUM  68
+ STARTING QUANTUM  97
+ STARTING QUANTUM 119
+INITIAL Q =    267816.0000, NEW Q IS RELATIVE TO MIN.EGY.=         0.0000
+ NUMBER OF LINES = 502043
+TEMPERATURE - Q(SPIN-ROT.) - log Q(SPIN-ROT.)
+    300.000  24020498.6877    7.3806
+    292.000  23996832.6693    7.3802
+    225.000  23826617.2929    7.3771
+    150.000  23700264.9836    7.3748
+     75.000  23639311.4679    7.3736
+     37.500  23626403.9209    7.3734
+     18.750  23622512.0178    7.3733
+      9.375  23621154.3659    7.3733
+sorted    16385 lines
+sorted    32769 lines
+sorted    49153 lines
+sorted    65537 lines
+sorted    81921 lines
+sorted    98305 lines
+sorted   114689 lines
+sorted   131073 lines
+sorted   147457 lines
+sorted   163841 lines
+sorted   180225 lines
+sorted   196609 lines
+sorted   212993 lines
+sorted   229377 lines
+sorted   245761 lines
+sorted   262145 lines
+sorted   278529 lines
+sorted   294913 lines
+sorted   311297 lines
+sorted   327681 lines
+sorted   344065 lines
+sorted   360449 lines
+sorted   376833 lines
+sorted   393217 lines
+sorted   409601 lines
+sorted   425985 lines
+sorted   442369 lines
+sorted   458753 lines
+sorted   475137 lines
+sorted   491521 lines
+sorted   502043 lines

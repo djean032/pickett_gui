@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -11,169 +12,234 @@ TEST_CASE("LinParser parses valid record from test data", "[lin_parser]") {
     
     // First line from cyanomethcycloprop.lin:
     // 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05
-    std::istringstream input(" 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05");
-    
-    LinParser parser;
-    auto records = parser.parse(input);
-    
-    CAPTURE(records.size());
-    REQUIRE(records.size() == 1);
-    
-    INFO("Checking quantum numbers (fixed-width positions 1-36)");
-    for (int i = 0; i < 12; ++i) {
-        CAPTURE(i, records[0].qn[i]);
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_single.lin";
+    {
+        std::ofstream f(test_file);
+        f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05\n";
     }
-    CHECK(records[0].qn[0] == 68);
-    CHECK(records[0].qn[1] == 4);
-    CHECK(records[0].qn[2] == 64);
-    CHECK(records[0].qn[3] == 1);
-    CHECK(records[0].qn[4] == 67);
-    CHECK(records[0].qn[5] == 5);
-    CHECK(records[0].qn[6] == 63);
-    CHECK(records[0].qn[7] == 1);
-    CHECK(records[0].qn[8] == 0);
-    CHECK(records[0].qn[9] == 0);
-    CHECK(records[0].qn[10] == 0);
-    CHECK(records[0].qn[11] == 0);
     
-    INFO("Checking frequency, error, and weight values");
-    CAPTURE(records[0].freq);
-    CAPTURE(records[0].err);
-    CAPTURE(records[0].wt);
-    CHECK(records[0].freq == 303733.727837);
-    CHECK(records[0].err == 0.050000);
-    CHECK(records[0].wt == 2.50E-05);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 1);
+    REQUIRE(result.errors.empty());
+    
+    CHECK(result.records[0].qn[0] == 68);
+    CHECK(result.records[0].qn[1] == 4);
+    CHECK(result.records[0].qn[2] == 64);
+    CHECK(result.records[0].qn[3] == 1);
+    CHECK(result.records[0].qn[4] == 67);
+    CHECK(result.records[0].qn[5] == 5);
+    CHECK(result.records[0].qn[6] == 63);
+    CHECK(result.records[0].qn[7] == 1);
+    CHECK(result.records[0].qn[8] == 0);
+    CHECK(result.records[0].qn[9] == 0);
+    CHECK(result.records[0].qn[10] == 0);
+    CHECK(result.records[0].qn[11] == 0);
+    CHECK(result.records[0].freq == 303733.727837);
+    CHECK(result.records[0].err == 0.050000);
+    CHECK(result.records[0].wt == 2.50E-05);
+    
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser parses multiple records", "[lin_parser]") {
-    std::istringstream input(R"( 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05
- 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04)");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_multi.lin";
+    {
+        std::ofstream f(test_file);
+        f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05\n";
+        f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 2);
+    REQUIRE(result.errors.empty());
+    CHECK(result.records[1].freq == 303845.604135);
     
-    INFO("Parsed " << records.size() << " records from 2-line input");
-    REQUIRE(records.size() == 2);
-    
-    INFO("Checking second record frequency");
-    CAPTURE(records[1].freq);
-    CHECK(records[1].freq == 303845.604135);
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser skips blank lines and comments", "[lin_parser]") {
-    std::istringstream input(R"(! This is a comment
- 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05
-
- 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04)");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_skip.lin";
+    {
+        std::ofstream f(test_file);
+        f << "! This is a comment\n";
+        f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05\n";
+        f << "\n";
+        f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 2);
+    REQUIRE(result.errors.empty());
+    CHECK(result.records[0].freq == 303733.727837);
+    CHECK(result.records[1].freq == 303845.604135);
     
-    INFO("Should parse 2 records, skipping comment (!) and blank lines");
-    REQUIRE(records.size() == 2);
-    CHECK(records[0].freq == 303733.727837);
-    CHECK(records[1].freq == 303845.604135);
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser handles empty file", "[lin_parser]") {
-    std::istringstream input("");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_empty.lin";
+    {
+        std::ofstream f(test_file);
+        f << "";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    CHECK(result.records.empty());
+    CHECK(result.errors.empty());
     
-    INFO("Empty file should produce empty records vector");
-    REQUIRE(records.empty());
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser handles file with only comments", "[lin_parser]") {
-    std::istringstream input(R"(! Header comment
-! Another comment)");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_comments.lin";
+    {
+        std::ofstream f(test_file);
+        f << "! Header comment\n";
+        f << "! Another comment\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    CHECK(result.records.empty());
+    CHECK(result.errors.empty());
     
-    INFO("Comment-only file should produce empty records vector");
-    REQUIRE(records.empty());
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser handles scientific notation", "[lin_parser]") {
-    std::istringstream input(" 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  1.99E-04");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_sci.lin";
+    {
+        std::ofstream f(test_file);
+        f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  1.99E-04\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 1);
+    REQUIRE(result.errors.empty());
+    CHECK(result.records[0].wt == 1.99E-04);
     
-    INFO("Testing scientific notation parsing in WT field (1.99E-04)");
-    REQUIRE(records.size() == 1);
-    CAPTURE(records[0].wt);
-    CHECK(records[0].wt == 1.99E-04);
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser parses actual test file", "[lin_parser]") {
-    std::string test_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin";
-    INFO("Reading test file: " << test_file);
+    auto result = LinParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
     
-    LinParser parser;
-    auto records = parser.parse_file(test_file);
+    INFO("Success: " << result.success);
+    INFO("Records: " << result.records.size());
+    INFO("Errors: " << result.errors.size());
     
-    CAPTURE(records.size());
-    REQUIRE(!records.empty());
-    CHECK(records.size() == 2506);
+    CHECK(result.success);
+    CHECK(!result.records.empty());
     
-    INFO("Checking first record (line 1)");
-    CAPTURE(records[0].qn[0], records[0].qn[1], records[0].qn[2], records[0].qn[3]);
-    CAPTURE(records[0].freq);
-    CHECK(records[0].qn[0] == 68);
-    CHECK(records[0].qn[1] == 4);
-    CHECK(records[0].freq == 303733.727837);
+    // Known size from inspection - may have some skipped lines
+    if (!result.records.empty()) {
+        CHECK(result.records.size() == 2506);
+        
+        // Check first record
+        CHECK(result.records[0].qn[0] == 68);
+        CHECK(result.records[0].qn[1] == 4);
+        CHECK(result.records[0].freq == 303733.727837);
+        
+        // Check last record
+        CHECK(result.records[2505].qn[0] == 61);
+        CHECK(result.records[2505].qn[1] == 5);
+        CHECK(result.records[2505].freq == 277125.104928);
+    }
+}
+
+TEST_CASE("LinParser returns error for non-existent file", "[lin_parser]") {
+    auto result = LinParser::parse_file("nonexistent_file.lin");
     
-    INFO("Checking last record (line 2506)");
-    CAPTURE(records[2505].qn[0], records[2505].qn[1]);
-    CAPTURE(records[2505].freq);
-    CHECK(records[2505].qn[0] == 61);
-    CHECK(records[2505].qn[1] == 5);
-    CHECK(records[2505].freq == 277125.104928);
-    
-    INFO("Test file parsed successfully with " << records.size() << " records");
+    CHECK(!result.success);
+    CHECK(result.records.empty());
+    REQUIRE(!result.errors.empty());
+    CHECK(result.errors[0].first == 0);  // Line 0 = file-level error
 }
 
 TEST_CASE("LinParser parses all 12 quantum numbers correctly", "[lin_parser]") {
-    // Explicit test that all 12 QN positions are parsed
-    std::istringstream input("  1  2  3  4  5  6  7  8  9 10 11 12  100000.000000     0.010000  1.00E+00");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_all_qn.lin";
+    {
+        std::ofstream f(test_file);
+        f << "  1  2  3  4  5  6  7  8  9 10 11 12  100000.000000     0.010000  1.00E+00\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
-    
-    REQUIRE(records.size() == 1);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 1);
+    REQUIRE(result.errors.empty());
     
     INFO("Verifying all 12 QN fields (3 chars each, positions 1-36)");
     for (int i = 0; i < 12; ++i) {
         CAPTURE(i);
-        CHECK(records[0].qn[i] == i + 1);  // Expect 1, 2, 3, ... 12
+        CHECK(result.records[0].qn[i] == i + 1);
     }
     
-    INFO("Verifying QN positions map correctly to input columns");
-    CHECK(records[0].qn[0] == 1);   // Pos 1-3
-    CHECK(records[0].qn[11] == 12); // Pos 34-36
-    CHECK(records[0].freq == 100000.0);
+    std::remove(test_file.c_str());
 }
 
 TEST_CASE("LinParser handles negative quantum numbers", "[lin_parser]") {
-    // Test that negative QN values parse correctly
-    std::istringstream input(" -1 -2 -3 -4 -5 -6 -7 -8 -9-10-11-12  100000.000000     0.010000  1.00E+00");
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_neg.lin";
+    {
+        std::ofstream f(test_file);
+        f << " -1 -2 -3 -4 -5 -6 -7 -8 -9-10-11-12  100000.000000     0.010000  1.00E+00\n";
+    }
     
-    LinParser parser;
-    auto records = parser.parse(input);
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 1);
     
-    REQUIRE(records.size() == 1);
-    CHECK(records[0].qn[0] == -1);
-    CHECK(records[0].qn[1] == -2);
-    CHECK(records[0].qn[11] == -12);
+    CHECK(result.records[0].qn[0] == -1);
+    CHECK(result.records[0].qn[1] == -2);
+    CHECK(result.records[0].qn[11] == -12);
+    
+    std::remove(test_file.c_str());
 }
 
-TEST_CASE("LinParser returns empty for non-existent file", "[lin_parser]") {
-    LinParser parser;
-    auto records = parser.parse_file("nonexistent_file.lin");
+TEST_CASE("LinParser reports line-level errors", "[lin_parser]") {
+    std::string test_file = std::string(TEST_DATA_DIR) + "/test_errors.lin";
+    {
+        std::ofstream f(test_file);
+        f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05\n";
+        f << "THIS IS A BAD LINE\n";  // Line 2 - too short
+        f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
+    }
     
-    INFO("Non-existent file should return empty vector, not throw");
-    REQUIRE(records.empty());
+    auto result = LinParser::parse_file(test_file);
+    CHECK(result.success);
+    REQUIRE(result.records.size() == 2);  // Skip bad line, get 2 good ones
+    REQUIRE(result.errors.size() == 1);  // One error reported
+    CHECK(result.errors[0].first == 2);  // Error on line 2
+    
+    std::remove(test_file.c_str());
+}
+
+TEST_CASE("LinParser write roundtrip with SPFIT", "[lin_parser]") {
+    // Parse original LIN file
+    auto original = LinParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
+    REQUIRE(original.success);
+    REQUIRE(original.records.size() > 0);
+    
+    // Write to _bak.lin file
+    std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.lin";
+    std::string error;
+    bool write_ok = LinParser::write_file(bak_file, original, error);
+    CHECK(write_ok);
+    
+    // Parse the written file and verify it matches
+    auto roundtrip = LinParser::parse_file(bak_file);
+    CHECK(roundtrip.success);
+    CHECK(roundtrip.records.size() == original.records.size());
+    
+    // Compare first and last records
+    if (!roundtrip.records.empty()) {
+        CHECK(roundtrip.records[0].qn[0] == original.records[0].qn[0]);
+        CHECK(roundtrip.records[0].freq == Catch::Approx(original.records[0].freq));
+        CHECK(roundtrip.records.back().qn[0] == original.records.back().qn[0]);
+        CHECK(roundtrip.records.back().freq == Catch::Approx(original.records.back().freq));
+    }
 }
