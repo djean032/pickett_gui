@@ -36,6 +36,7 @@ set(PROJECT_SOURCES
 qt_add_executable(pickett-gui
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
+    spectrumplotwidget.h spectrumplotwidget.cpp
 )
 
 target_link_libraries(pickett-gui PRIVATE
