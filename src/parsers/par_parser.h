@@ -53,6 +53,7 @@ struct ParParseResult {
   ParHeader header;
   std::vector<ParOptionLine> options;
   std::vector<ParParameter> parameters;
+  std::vector<std::string> comments; // Lines starting with ! (preserved as-is)
   std::vector<std::pair<int, std::string>> errors; // line_number, message
   bool success;
 
@@ -62,17 +63,18 @@ struct ParParseResult {
 class ParParser {
 public:
   static ParParseResult parse_file(const std::string &filepath);
-  
+
   // Write .par file from parsed data
-  static bool write(std::ostream& os, const ParParseResult& data, std::string& error);
-  static bool write_file(const std::string& filepath, const ParParseResult& data,
-                        std::string& error);
+  static bool write(std::ostream &os, const ParParseResult &data,
+                    std::string &error);
+  static bool write_file(const std::string &filepath,
+                         const ParParseResult &data, std::string &error);
 
   // Validate CHR field
   static bool is_valid_chr(char c);
-  
+
   // Encode CHR field ('a', 'g', or 's')
-  static char encode_chr(const std::vector<ParOptionLine>& options);
+  static char encode_chr(const std::vector<ParOptionLine> &options);
 
 private:
   static bool parse_header_line(const std::string &line, ParHeader &header,
@@ -81,11 +83,6 @@ private:
                                 bool is_first_line, std::string &error);
   static bool parse_parameter_line(const std::string &line, ParParameter &param,
                                    std::string &error);
-  static std::pair<double, std::string> parse_double_safe(const std::string &s);
-  static std::pair<int, std::string> parse_int_safe(const std::string &s);
-
-  // Trim whitespace from string
-  static std::string trim(const std::string &s);
 };
 
 } // namespace pickett

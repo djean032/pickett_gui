@@ -1,125 +1,14 @@
 #include "lin_parser.h"
+#include "utils.h"
 #include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <iomanip>
-#include <limits>
 #include <sstream>
 
 namespace pickett {
 
-std::pair<int, std::string> LinParser::parse_int_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0, "Empty string"};
-  }
-
-  // Check for valid characters (digits, optional leading space, optional leading -)
-  size_t start = 0;
-  bool negative = false;
-
-  // Skip leading spaces
-  while (start < s.size() && std::isspace(s[start])) {
-    start++;
-  }
-
-  if (start >= s.size()) {
-    return {0, "Only whitespace"};
-  }
-
-  // Check for negative sign
-  if (s[start] == '-') {
-    negative = true;
-    start++;
-  }
-
-  // Parse digits
-  long long result = 0;
-  bool has_digits = false;
-
-  for (size_t i = start; i < s.size(); ++i) {
-    if (std::isdigit(s[i])) {
-      result = result * 10 + (s[i] - '0');
-      has_digits = true;
-    } else if (std::isspace(s[i])) {
-      // Allow trailing spaces
-      continue;
-    } else {
-      return {0, "Invalid character: " + std::string(1, s[i])};
-    }
-  }
-
-  if (!has_digits) {
-    return {0, "No digits found"};
-  }
-
-  if (negative) {
-    result = -result;
-  }
-
-  // Check for overflow
-  if (result < std::numeric_limits<int>::min() ||
-      result > std::numeric_limits<int>::max()) {
-    return {0, "Integer overflow"};
-  }
-
-  return {static_cast<int>(result), ""};
-}
-
-std::pair<double, std::string> LinParser::parse_double_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0.0, "Empty string"};
-  }
-
-  // Manual check for valid characters before calling stod
-  bool has_digit = false;
-  bool has_dot = false;
-  bool has_exp = false;
-
-  for (size_t i = 0; i < s.size(); ++i) {
-    char c = s[i];
-    if (std::isdigit(c)) {
-      has_digit = true;
-    } else if (c == '.' && !has_dot && !has_exp) {
-      has_dot = true;
-    } else if ((c == 'e' || c == 'E') && !has_exp && has_digit) {
-      has_exp = true;
-      // Check for sign after e/E
-      if (i + 1 < s.size() && (s[i + 1] == '+' || s[i + 1] == '-')) {
-        i++;
-      }
-    } else if (c == '+' || c == '-') {
-      // Allow at start or after e/E
-      if (i != 0 && !(has_exp && (s[i - 1] == 'e' || s[i - 1] == 'E'))) {
-        return {0.0, "Invalid sign position"};
-      }
-    } else if (std::isspace(c)) {
-      // Allow leading/trailing spaces
-      if (has_digit && i < s.size() - 1) {
-        // Space in middle after digits - check if rest is just spaces
-        for (size_t j = i + 1; j < s.size(); ++j) {
-          if (!std::isspace(s[j])) {
-            return {0.0, "Invalid character: space in middle"};
-          }
-        }
-        break;
-      }
-    } else {
-      return {0.0, "Invalid character: " + std::string(1, c)};
-    }
-  }
-
-  if (!has_digit) {
-    return {0.0, "No digits found"};
-  }
-
-  try {
-    size_t pos;
-    double result = std::stod(s, &pos);
-    return {result, ""};
-  } catch (...) {
-    return {0.0, "Double conversion failed"};
-  }
-}
+// parse_int_safe and parse_double_safe now come from utils.h
 
 LinParseResult LinParser::parse_file(const std::string &filepath) {
   LinParseResult result;
@@ -171,7 +60,8 @@ LinParseResult LinParser::parse_file(const std::string &filepath) {
       if (!qn_str.empty()) {
         auto qn_result = parse_int_safe(qn_str);
         if (!qn_result.second.empty()) {
-          line_errors.push_back("QN[" + std::to_string(i) + "]: " + qn_result.second);
+          line_errors.push_back("QN[" + std::to_string(i) +
+                                "]: " + qn_result.second);
         } else {
           record.qn[i] = qn_result.first;
         }
@@ -273,63 +163,70 @@ std::string LinParser::format_qn(int qn) {
 }
 
 // Format double for LIN file (FREQ/ERR/WT in freeform)
-std::string LinParser::format_double(double value, int precision) {
-  // Use appropriate formatting based on magnitude
-  std::ostringstream oss;
-  oss << std::setprecision(precision);
-  
-  if (std::abs(value) < 0.01 || std::abs(value) >= 1e6) {
-    // Use scientific notation for very small or large values
-    oss << std::scientific << value;
+// Format value for LIN files with SPFIT-compatible format
+// Frequency: fixed notation with 6 decimal places
+// Error/Weight: scientific notation with uppercase E, 2 sig figs, 2-digit
+// exponent
+std::string LinParser::format_double(double value, bool is_scientific) {
+  if (is_scientific) {
+    // Use common utility for scientific notation with 2 sig figs, 2-digit
+    // exponent
+    return format_scientific_lin(value, 2);
   } else {
-    // Use fixed for normal ranges
-    oss << std::fixed << value;
+    // Fixed notation for frequency/error - 6 decimal places
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << value;
+    return oss.str();
   }
-  
-  return oss.str();
 }
 
-bool LinParser::write(std::ostream& os, const LinParseResult& data, std::string& error) {
+bool LinParser::write(std::ostream &os, const LinParseResult &data,
+                      std::string &error) {
   // Check if data is valid
   if (!data.success && data.records.empty()) {
     error = "No valid records to write";
     return false;
   }
-  
+
   try {
-    for (const auto& record : data.records) {
+    for (const auto &record : data.records) {
       // Write 12 quantum numbers in I3 format (positions 1-36)
       for (int i = 0; i < 12; ++i) {
         os << format_qn(record.qn[i]);
       }
-      
+
       // Write space + FREQ, ERR, WT (freeform, space-separated)
-      os << "   " << format_double(record.freq, 10);
-      os << "     " << format_double(record.err, 6);
-      os << "  " << format_double(record.wt, 6);
+      // FREQ: fixed with 6 decimal places
+      // ERR: fixed with 6 decimal places (like original format)
+      // WT: scientific with 2 sig figs, uppercase E, 3-digit exponent
+      os << "   "
+         << format_double(record.freq, false); // false = fixed notation
+      os << "     "
+         << format_double(record.err, false);       // false = fixed notation
+      os << "  " << format_double(record.wt, true); // true = scientific
       os << "\n";
-      
+
       if (!os.good()) {
         error = "Failed to write record to stream";
         return false;
       }
     }
-    
+
     return true;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     error = std::string("Exception during write: ") + e.what();
     return false;
   }
 }
 
-bool LinParser::write_file(const std::string& filepath, const LinParseResult& data, 
-                           std::string& error) {
+bool LinParser::write_file(const std::string &filepath,
+                           const LinParseResult &data, std::string &error) {
   std::ofstream file(filepath);
   if (!file.is_open()) {
     error = "Failed to open file for writing: " + filepath;
     return false;
   }
-  
+
   bool result = write(file, data, error);
   file.close();
   return result;

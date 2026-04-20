@@ -365,4 +365,10 @@ TEST_CASE("ParParser comprehensive data roundtrip", "[par_parser]") {
         CHECK(rt_param.erpar == Catch::Approx(orig_param.erpar));
         CHECK(rt_param.label == orig_param.label);
     }
+    
+    // Verify comments are preserved (lines after ! marker)
+    CHECK(roundtrip.comments.size() == original.comments.size());
+    for (size_t i = 0; i < original.comments.size(); ++i) {
+        CHECK(roundtrip.comments[i] == original.comments[i]);
+    }
 }

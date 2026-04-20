@@ -310,7 +310,7 @@ TEST_CASE("Fit parser updated parameters", "[fit]") {
     CHECK(result.correlations.size() > 0);
     CHECK(result.correlations.size() == 18 * 17);  // 306 entries
     
-    // Verify all correlations have valid row/col indices
+     // Verify all correlations have valid row/col indices
     for (const auto& corr : result.correlations) {
       CHECK(corr.row >= 1);
       CHECK(corr.row <= 18);
@@ -318,5 +318,80 @@ TEST_CASE("Fit parser updated parameters", "[fit]") {
       CHECK(corr.col <= 18);
       CHECK(corr.row != corr.col);
     }
+  }
+}
+
+TEST_CASE("Fit parser rejected lines parsing", "[fit]") {
+  SECTION("Parse rejected_lines_fit.fit file with rejected lines") {
+    auto result = FitParser::parse_file(get_test_data_path("rejected_lines_fit.fit"));
+    
+    REQUIRE(result.success);
+    REQUIRE(result.errors.empty());
+    
+    // Header checks - from first header (overall fit statistics)
+    // Note: This file has 15 iterations, starting with 9258 lines, ending with 2506
+    // The header shows 900 total parameter slots, but only 210 are actually used
+    CHECK(result.header.lines_requested == 9258);  // Initial lines requested
+    CHECK(result.header.num_parameters == 900);      // Total parameter slots in fit
+    CHECK(result.header.num_iterations == 15);       // Number of iterations performed
+    
+    // Should have 210 initial parameters (only fitted ones are listed)
+    REQUIRE(result.parameters.size() == 210);
+    
+    // Should have 2506 line records (from final iteration)
+    REQUIRE(result.lines.size() == 2506);
+    
+    // SPFIT reports 128 rejected lines/blends
+    CHECK(result.rejected_line_count == 128);
+    
+    // Check counts of rejected vs used lines
+    int used_count = 0;
+    int rejected_count = 0;
+    int rejected_blend_members = 0;
+    for (const auto& line : result.lines) {
+      if (line.rejected) {
+        rejected_count++;
+        if (line.is_blend) {
+          rejected_blend_members++;
+        }
+      } else {
+        used_count++;
+      }
+    }
+    
+    // Verify counts
+    CHECK(used_count == 2003);  // Lines used in fit
+    CHECK(rejected_count == 503);  // Individual line records rejected
+    CHECK(used_count + rejected_count == 2506);  // Total lines
+    
+    // Check blend rejection propagation
+    // When a blend is rejected, all members should be marked rejected
+    if (rejected_blend_members > 0) {
+      // Verify at least some blends were rejected
+      CHECK(rejected_blend_members > 100);
+    }
+    
+    // Check specific rejected line properties
+    bool found_rejected_blend = false;
+    for (const auto& line : result.lines) {
+      if (line.rejected && line.is_blend) {
+        found_rejected_blend = true;
+        // Blend members should point to a blend master
+        CHECK(line.blend_master_line > 0);
+        break;
+      }
+    }
+    CHECK(found_rejected_blend);
+    
+    // Verify updated parameters were parsed
+    // Note: Final iteration has 210 fitted parameters (from 900 total)
+    CHECK(result.updated_parameters.size() == 210);
+    
+    // Verify correlations were parsed
+    CHECK(result.correlations.size() > 0);
+    
+    // Check first and last line
+    CHECK(result.lines.front().rejected == false);  // First line should be used
+    CHECK(result.lines.back().rejected == true);    // Last line should be rejected
   }
 }

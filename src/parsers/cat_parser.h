@@ -56,12 +56,6 @@ private:
   // Decode 2-char quantum number string to integer
   // Returns error message if malformed, empty string on success
   static std::pair<int, std::string> decode_qn(const std::string &s);
-
-  // Parse integer safely without exceptions
-  static std::pair<int, std::string> parse_int_safe(const std::string &s);
-
-  // Parse double safely without exceptions
-  static std::pair<double, std::string> parse_double_safe(const std::string &s);
 };
 
 } // namespace pickett

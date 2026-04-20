@@ -1,9 +1,11 @@
 #include "cat_parser.h"
-#include <cctype>
+#include "utils.h"
 #include <fstream>
 #include <limits>
 
 namespace pickett {
+
+// parse_int_safe and parse_double_safe now come from utils.h
 
 // All known QFMT codes and their labels (from spinv.txt documentation)
 static const std::vector<std::string> QFMT_LABELS_0; // Atom - empty
@@ -57,142 +59,6 @@ QNFormat CatParser::decode_qnfmt(int qnfmt) {
       (qnfmt / 10) % 10, // H: half-integer flags
       qnfmt % 10         // NQN: number of quanta per state
   };
-}
-
-std::pair<int, std::string> CatParser::parse_int_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0, "Empty string"};
-  }
-
-  // Check for valid characters (digits, optional leading space, optional
-  // leading -)
-  size_t start = 0;
-  bool negative = false;
-
-  // Skip leading spaces
-  while (start < s.size() && std::isspace(s[start])) {
-    start++;
-  }
-
-  if (start >= s.size()) {
-    return {0, "Only whitespace"};
-  }
-
-  // Check for negative sign
-  if (s[start] == '-') {
-    negative = true;
-    start++;
-  }
-
-  // Parse digits
-  long long result = 0;
-  bool has_digits = false;
-
-  for (size_t i = start; i < s.size(); ++i) {
-    if (std::isdigit(s[i])) {
-      result = result * 10 + (s[i] - '0');
-      has_digits = true;
-    } else if (std::isspace(s[i])) {
-      // Allow trailing spaces
-      continue;
-    } else {
-      return {0, "Invalid character: " + std::string(1, s[i])};
-    }
-  }
-
-  if (!has_digits) {
-    return {0, "No digits found"};
-  }
-
-  if (negative) {
-    result = -result;
-  }
-
-  // Check for overflow
-  if (result < std::numeric_limits<int>::min() ||
-      result > std::numeric_limits<int>::max()) {
-    return {0, "Integer overflow"};
-  }
-
-  return {static_cast<int>(result), ""};
-}
-
-std::pair<double, std::string>
-CatParser::parse_double_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0.0, "Empty string"};
-  }
-
-  // Manual check for valid characters before calling stod
-  bool has_digit = false;
-  bool has_dot = false;
-  bool has_exp = false;
-  bool has_sign = false;
-  bool in_leading_ws = true;
-
-  for (size_t i = 0; i < s.size(); ++i) {
-    char c = s[i];
-    if (std::isdigit(c)) {
-      has_digit = true;
-      in_leading_ws = false;
-    } else if (c == '.' && !has_dot && !has_exp) {
-      // Dot allowed before exponent, regardless of whether we've seen sign or
-      // digits
-      has_dot = true;
-      in_leading_ws = false;
-    } else if ((c == 'e' || c == 'E') && !has_exp && has_digit) {
-      has_exp = true;
-      in_leading_ws = false; // After e/E, we're in the exponent
-      // Check for sign after e/E
-      if (i + 1 < s.size() && (s[i + 1] == '+' || s[i + 1] == '-')) {
-        i++;
-      }
-    } else if (c == '+' || c == '-') {
-      // Allow at start (including after leading whitespace) or after e/E
-      if (in_leading_ws) {
-        // Sign after leading whitespace - this is OK
-        has_sign = true;
-        in_leading_ws = false;
-      } else if (has_exp && i > 0 && (s[i - 1] == 'e' || s[i - 1] == 'E')) {
-        // Sign in exponent - already handled above
-        in_leading_ws = false;
-      } else if (!has_digit && !has_sign) {
-        // Sign at start of number (after any leading whitespace)
-        has_sign = true;
-      } else {
-        return {0.0, "Invalid sign position"};
-      }
-    } else if (std::isspace(c)) {
-      if (in_leading_ws) {
-        // Still in leading whitespace - OK
-      } else if (has_digit) {
-        // Trailing whitespace after digits - check rest is just spaces
-        for (size_t j = i + 1; j < s.size(); ++j) {
-          if (!std::isspace(s[j])) {
-            return {0.0, "Invalid character: space in middle"};
-          }
-        }
-        break;
-      } else {
-        // Whitespace between sign and digits - not valid
-        return {0.0, "Invalid character: space between sign and number"};
-      }
-    } else {
-      return {0.0, "Invalid character: " + std::string(1, c)};
-    }
-  }
-
-  if (!has_digit) {
-    return {0.0, "No digits found"};
-  }
-
-  try {
-    size_t pos;
-    double result = std::stod(s, &pos);
-    return {result, ""};
-  } catch (...) {
-    return {0.0, "Double conversion failed"};
-  }
 }
 
 std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {

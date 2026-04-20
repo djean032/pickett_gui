@@ -29,13 +29,12 @@ struct FitParameter {
   double error;
   std::string label;
 
-  FitParameter()
-      : index(0), copy(0), idpar(0), value(0.0), error(0.0) {}
+  FitParameter() : index(0), copy(0), idpar(0), value(0.0), error(0.0) {}
 };
 
 struct FitLineRecord {
   int seq_number;
-  int qn[12];  // 12 quantum numbers (36 chars / 3 = 12 from qnfmt2)
+  int qn[12]; // 12 quantum numbers (36 chars / 3 = 12 from qnfmt2)
   double exp_freq;
   double calc_freq;
   double diff;
@@ -46,10 +45,12 @@ struct FitLineRecord {
   std::optional<double> wt;
   bool is_blend;
   int blend_master_line;
+  bool rejected; // True if line was rejected from fit (marked with ***** NEXT
+                 // LINE NOT USED IN FIT)
 
   FitLineRecord()
-      : seq_number(0), exp_freq(0.0), calc_freq(0.0), diff(0.0),
-        exp_err(0.0), est_err(0.0), is_blend(false), blend_master_line(-1) {
+      : seq_number(0), exp_freq(0.0), calc_freq(0.0), diff(0.0), exp_err(0.0),
+        est_err(0.0), is_blend(false), blend_master_line(-1), rejected(false) {
     for (int i = 0; i < 12; ++i)
       qn[i] = 0;
   }
@@ -71,8 +72,10 @@ struct FitParseResult {
   std::vector<FitCorrelationEntry> correlations;
   std::vector<std::pair<int, std::string>> errors;
   bool success;
+  int rejected_line_count; // Count of rejected lines/blends (SPFIT counts
+                           // blends as 1)
 
-  FitParseResult() : success(true) {}
+  FitParseResult() : success(true), rejected_line_count(0) {}
 };
 
 class FitParser {
@@ -80,9 +83,9 @@ public:
   static FitParseResult parse_file(const std::string &filepath);
 
 private:
-  static bool parse_header_line(const std::string &line, FitHeader &header,
-                                int line_num,
-                                std::vector<std::pair<int, std::string>> &errors);
+  static bool
+  parse_header_line(const std::string &line, FitHeader &header, int line_num,
+                    std::vector<std::pair<int, std::string>> &errors);
   static bool parse_parameter_line(const std::string &line, FitParameter &param,
                                    std::string &error);
   static bool parse_line_record(const std::string &line, FitLineRecord &record,
@@ -91,13 +94,9 @@ private:
   static bool parse_correlation_line(const std::string &line,
                                      std::vector<FitCorrelationEntry> &entries,
                                      std::string &error);
-  static bool parse_updated_parameter_line(const std::string &line, 
+  static bool parse_updated_parameter_line(const std::string &line,
                                            FitParameter &param,
                                            std::string &error);
-  
-  static std::pair<double, std::string> parse_double_safe(const std::string &s);
-  static std::pair<int, std::string> parse_int_safe(const std::string &s);
-  static std::string trim(const std::string &s);
 };
 
 } // namespace pickett

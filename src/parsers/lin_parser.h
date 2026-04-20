@@ -21,8 +21,8 @@ struct LinRecord {
 
 struct LinParseResult {
   std::vector<LinRecord> records;
-  std::vector<std::pair<int, std::string>> errors;  // line_number, message
-  bool success;  // false if critical error (file not found)
+  std::vector<std::pair<int, std::string>> errors; // line_number, message
+  bool success; // false if critical error (file not found)
 
   LinParseResult() : success(true) {}
 };
@@ -31,23 +31,19 @@ class LinParser {
 public:
   // Parse .lin file, returns result with records and any errors
   static LinParseResult parse_file(const std::string &filepath);
-  
+
   // Write .lin file from parsed data
   // Returns true on success, false on failure with error message
-  static bool write(std::ostream& os, const LinParseResult& data, std::string& error);
-  static bool write_file(const std::string& filepath, const LinParseResult& data, 
-                         std::string& error);
+  static bool write(std::ostream &os, const LinParseResult &data,
+                    std::string &error);
+  static bool write_file(const std::string &filepath,
+                         const LinParseResult &data, std::string &error);
 
 private:
-  // Parse integer safely without exceptions
-  static std::pair<int, std::string> parse_int_safe(const std::string &s);
-  // Parse double safely without exceptions
-  static std::pair<double, std::string> parse_double_safe(const std::string &s);
-  
   // Format quantum number in I3 format (3 chars, right-justified, space-padded)
   static std::string format_qn(int qn);
   // Format double for LIN file (FREQ/ERR/WT in freeform)
-  static std::string format_double(double value, int precision);
+  static std::string format_double(double value, bool is_scientific);
 };
 
 } // namespace pickett

@@ -1,4 +1,5 @@
 #include "par_parser.h"
+#include "utils.h"
 #include <cctype>
 #include <cstdio>
 #include <fstream>
@@ -7,138 +8,6 @@
 #include <sstream>
 
 namespace pickett {
-
-std::string ParParser::trim(const std::string &s) {
-  size_t start = s.find_first_not_of(" \t\r\n");
-  if (start == std::string::npos)
-    return "";
-  size_t end = s.find_last_not_of(" \t\r\n");
-  return s.substr(start, end - start + 1);
-}
-
-std::pair<int, std::string> ParParser::parse_int_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0, "Empty string"};
-  }
-
-  size_t start = 0;
-  bool negative = false;
-
-  // Skip leading whitespace
-  while (start < s.size() && std::isspace(s[start])) {
-    start++;
-  }
-
-  if (start >= s.size()) {
-    return {0, "Only whitespace"};
-  }
-
-  // Check for negative sign
-  if (s[start] == '-') {
-    negative = true;
-    start++;
-  } else if (s[start] == '+') {
-    start++;
-  }
-
-  long long result = 0;
-  bool has_digits = false;
-
-  for (size_t i = start; i < s.size(); ++i) {
-    if (std::isdigit(s[i])) {
-      result = result * 10 + (s[i] - '0');
-      has_digits = true;
-    } else if (std::isspace(s[i])) {
-      // Allow trailing spaces
-      continue;
-    } else {
-      return {0, "Invalid character: " + std::string(1, s[i])};
-    }
-  }
-
-  if (!has_digits) {
-    return {0, "No digits found"};
-  }
-
-  if (negative) {
-    result = -result;
-  }
-
-  if (result < std::numeric_limits<int>::min() ||
-      result > std::numeric_limits<int>::max()) {
-    return {0, "Integer overflow"};
-  }
-
-  return {static_cast<int>(result), ""};
-}
-
-std::pair<double, std::string>
-ParParser::parse_double_safe(const std::string &s) {
-  if (s.empty()) {
-    return {0.0, "Empty string"};
-  }
-
-  bool has_digit = false;
-  bool has_dot = false;
-  bool has_exp = false;
-  bool has_sign = false;
-  bool in_leading_ws = true;
-
-  for (size_t i = 0; i < s.size(); ++i) {
-    char c = s[i];
-    if (std::isdigit(c)) {
-      has_digit = true;
-      in_leading_ws = false;
-    } else if (c == '.' && !has_dot && !has_exp) {
-      has_dot = true;
-      in_leading_ws = false;
-    } else if ((c == 'e' || c == 'E') && !has_exp && has_digit) {
-      has_exp = true;
-      in_leading_ws = false;
-      if (i + 1 < s.size() && (s[i + 1] == '+' || s[i + 1] == '-')) {
-        i++;
-      }
-    } else if (c == '+' || c == '-') {
-      if (in_leading_ws) {
-        has_sign = true;
-        in_leading_ws = false;
-      } else if (has_exp && i > 0 && (s[i - 1] == 'e' || s[i - 1] == 'E')) {
-        in_leading_ws = false;
-      } else if (!has_digit && !has_sign) {
-        has_sign = true;
-      } else {
-        return {0.0, "Invalid sign position"};
-      }
-    } else if (std::isspace(c)) {
-      if (in_leading_ws) {
-        // Still in leading whitespace
-      } else if (has_digit) {
-        for (size_t j = i + 1; j < s.size(); ++j) {
-          if (!std::isspace(s[j])) {
-            return {0.0, "Invalid character: space in middle"};
-          }
-        }
-        break;
-      } else {
-        return {0.0, "Invalid character: space between sign and number"};
-      }
-    } else {
-      return {0.0, "Invalid character: " + std::string(1, c)};
-    }
-  }
-
-  if (!has_digit) {
-    return {0.0, "No digits found"};
-  }
-
-  try {
-    size_t pos;
-    double result = std::stod(s, &pos);
-    return {result, ""};
-  } catch (...) {
-    return {0.0, "Double conversion failed"};
-  }
-}
 
 bool ParParser::is_valid_chr(char c) {
   return c == 'a' || c == 'g' || c == 's';
@@ -447,10 +316,11 @@ ParParseResult ParParser::parse_file(const std::string &filepath) {
       continue;
     }
 
-    // Check for comment lines (starting with !)
-    size_t first_non_space = line.find_first_not_of(" \t");
-    if (first_non_space != std::string::npos && line[first_non_space] == '!') {
-      // This is a comment line - parameter data follows
+    // Check for comment marker line (just !)
+    std::string trimmed = trim(line);
+    if (trimmed == "!") {
+      // This marks the start of comment section - preserve the ! line
+      result.comments.push_back(line);
       more_option_lines = false;
       break;
     }
@@ -474,21 +344,32 @@ ParParseResult ParParser::parse_file(const std::string &filepath) {
     is_first_option_line = false;
   }
 
-  // Remaining lines: Parameters
+  // Remaining lines: Parameters (until we hit a ! comment marker)
+  bool in_comment_section = false;
   while (std::getline(file, line)) {
     line_num++;
     if (!line.empty() && line.back() == '\r') {
       line.pop_back();
     }
 
-    // Skip empty lines
+    // Skip empty lines in parameter section (preserve in comments)
     if (trim(line).empty()) {
+      if (in_comment_section) {
+        result.comments.push_back(line);
+      }
       continue;
     }
 
-    // Skip comment lines
-    size_t first_non_space = line.find_first_not_of(" \t");
-    if (first_non_space != std::string::npos && line[first_non_space] == '!') {
+    // Check for comment marker line (just !)
+    if (trim(line) == "!") {
+      in_comment_section = true;
+      result.comments.push_back(line);
+      continue;
+    }
+
+    // If in comment section, preserve everything
+    if (in_comment_section) {
+      result.comments.push_back(line);
       continue;
     }
 
@@ -515,10 +396,10 @@ ParParseResult ParParser::parse_file(const std::string &filepath) {
 }
 
 // Encode CHR field - determine from options or default to 'g'
-char ParParser::encode_chr(const std::vector<ParOptionLine>& options) {
+char ParParser::encode_chr(const std::vector<ParOptionLine> &options) {
   // Default to 'g' (ground state)
   char chr = 'g';
-  
+
   // Check first option line for CHR value
   if (!options.empty()) {
     char first_chr = options[0].chr;
@@ -526,45 +407,40 @@ char ParParser::encode_chr(const std::vector<ParOptionLine>& options) {
       chr = first_chr;
     }
   }
-  
+
   return chr;
 }
 
-// Format double to scientific notation for PAR files
-// Uses standard C++ scientific notation which SPFIT/SPCAT should accept in freeform mode
-static std::string format_scientific(double value, int precision = 15) {
-  std::ostringstream oss;
-  oss << std::scientific << std::setprecision(precision) << value;
-  return oss.str();
-}
+// Use format_scientific_upper from utils.h for PAR file format
 
-bool ParParser::write(std::ostream& os, const ParParseResult& data, std::string& error) {
+bool ParParser::write(std::ostream &os, const ParParseResult &data,
+                      std::string &error) {
   // Check if data is valid
   if (!data.success && data.parameters.empty()) {
     error = "No valid parameters to write";
     return false;
   }
-  
+
   try {
     // Line 1: Title
     os << data.header.title << "\n";
-    
+
     // Line 2: NPAR NLINE NITR NXPAR THRESH ERRTST FRAC CAL
     os << std::setw(4) << data.header.npar;
     os << std::setw(5) << data.header.nline;
     os << std::setw(5) << data.header.nitr;
     os << std::setw(5) << data.header.nxpar;
-    os << "   " << format_scientific(data.header.thresh, 4);
-    os << "    " << format_scientific(data.header.errtst, 4);
-    os << "    " << format_scientific(data.header.frac, 4);
+    os << "   " << format_scientific_upper(data.header.thresh, 4);
+    os << "    " << format_scientific_upper(data.header.errtst, 4);
+    os << "    " << format_scientific_upper(data.header.frac, 4);
     os << " " << std::fixed << std::setprecision(10) << data.header.cal;
     os << "\n";
-    
+
     // Option line(s)
     if (!data.options.empty()) {
       char chr = encode_chr(data.options);
-      const auto& opt = data.options[0];
-      
+      const auto &opt = data.options[0];
+
       // Format: CHR SPINO NVIB [comma-separated optional values]
       // Commas allow skipping values (e.g., set option 8 without setting 4-7)
       os << chr;
@@ -574,16 +450,17 @@ bool ParParser::write(std::ostream& os, const ParParseResult& data, std::string&
       if (opt.nvib.has_value()) {
         os << std::setw(4) << opt.nvib.value();
       }
-      
-      // Add comma-separated values - consecutive commas represent empty/skipped values
-      auto write_optional = [&os](const std::optional<int>& val) {
+
+      // Add comma-separated values - consecutive commas represent empty/skipped
+      // values
+      auto write_optional = [&os](const std::optional<int> &val) {
         if (val.has_value()) {
           os << "," << val.value();
         } else {
           os << ",";
         }
       };
-      
+
       write_optional(opt.knmin);
       write_optional(opt.knmax);
       write_optional(opt.ixx);
@@ -598,18 +475,28 @@ bool ParParser::write(std::ostream& os, const ParParseResult& data, std::string&
       os << ",,,";
       os << "\n";
     }
-    
+
     // Parameter lines: IDPAR PAR ERPAR /LABEL
-    for (const auto& param : data.parameters) {
+    for (const auto &param : data.parameters) {
       // IDPAR - right-justified to 10 chars
       os << std::setw(10) << param.idpar;
-      
-      // PAR - scientific notation
-      os << "  " << format_scientific(param.par, 15);
-      
-      // ERPAR - scientific notation
-      os << " " << format_scientific(param.erpar, 8);
-      
+
+      // PAR - scientific notation with column alignment
+      // Negative numbers: 1 space before '-', Positive: 2 spaces before first
+      // digit
+      if (param.par < 0) {
+        os << " " << format_scientific_upper(param.par, 15);
+      } else {
+        os << "  " << format_scientific_upper(param.par, 15);
+      }
+
+      // ERPAR - scientific notation with column alignment
+      if (param.erpar < 0) {
+        os << " " << format_scientific_upper(param.erpar, 8);
+      } else {
+        os << "  " << format_scientific_upper(param.erpar, 8);
+      }
+
       // Label
       if (!param.label.empty()) {
         os << " /" << param.label;
@@ -617,28 +504,33 @@ bool ParParser::write(std::ostream& os, const ParParseResult& data, std::string&
         os << " /";
       }
       os << "\n";
-      
+
       if (!os.good()) {
         error = "Failed to write parameter to stream";
         return false;
       }
     }
-    
+
+    // Write preserved comments (everything after ! line)
+    for (const auto &comment : data.comments) {
+      os << comment << "\n";
+    }
+
     return true;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     error = std::string("Exception during write: ") + e.what();
     return false;
   }
 }
 
-bool ParParser::write_file(const std::string& filepath, const ParParseResult& data,
-                          std::string& error) {
+bool ParParser::write_file(const std::string &filepath,
+                           const ParParseResult &data, std::string &error) {
   std::ofstream file(filepath);
   if (!file.is_open()) {
     error = "Failed to open file for writing: " + filepath;
     return false;
   }
-  
+
   bool result = write(file, data, error);
   file.close();
   return result;
