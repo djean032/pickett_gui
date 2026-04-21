@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "spectrumplotwidget.h"
 
 #include <QStackedWidget>
 #include <QWidget>
@@ -44,9 +45,15 @@ QWidget* MainWindow::createPage2() {
   QWidget* page = new QWidget;
   QVBoxLayout* layout = new QVBoxLayout(page);
 
+  auto *spec_plot = new SpectrumPlotWidget(this);
   QLabel* label = new QLabel("This is Page 2");
   QPushButton* button = new QPushButton("Go to Page 1");
 
+  std::vector<double> x = {0, 1, 2, 3, 4};
+  std::vector<double> y = {0, 1, 4, 9, 16};
+  spec_plot->setSpectrum(x, y);
+
+  layout->addWidget(spec_plot);
   layout->addWidget(label);
   layout->addWidget(button);
 
