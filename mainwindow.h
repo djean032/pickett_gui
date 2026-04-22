@@ -15,6 +15,7 @@ private:
   QStackedWidget *stack;
 
   QWidget* createPage1();
+  // --- Page 2 ---
   QWidget* createPage2();
 };
 #endif

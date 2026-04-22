@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QGraphicsTextItem>
 #include <algorithm>
+#include <iostream>
 
 SpectrumPlotWidget::SpectrumPlotWidget(QWidget *parent)
       : QGraphicsView(parent)
@@ -23,6 +24,13 @@ SpectrumPlotWidget::SpectrumPlotWidget(QWidget *parent)
 void SpectrumPlotWidget::setSpectrum(const std::vector<double>& freqs,
                                      const std::vector<double>& intensities)
 {
+
+  std::cout << "this = " << this << std::endl;  // Should not be 0x0 or garbage
+
+  // Check member validity
+  std::cout << "&xData = " << &xData << std::endl;
+  std::cout << "xData.size() before assignment = " << xData.size() << std::endl;
+
   xData = freqs;
   yData = intensities;
 
