@@ -9,8 +9,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Qt6 only - Graphs module
-find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+# Qt6 - Quick module for QML UI
+find_package(Qt6 REQUIRED COMPONENTS Quick)
+
+# Set Qt policies for consistent QML module behavior across Qt versions
+qt_policy(SET QTP0001 NEW)
+qt_policy(SET QTP0004 NEW)
 
 # Library with all parsers
 add_library(parsers
@@ -25,24 +29,30 @@ add_library(parsers
 
 target_include_directories(parsers PUBLIC src)
 
-set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-
-        mainwindow.h
-
-)
-
 qt_add_executable(pickett-gui
     MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
-    spectrumplotwidget.h spectrumplotwidget.cpp
+    main.cpp
+)
+
+# Add QML module for our C++ types
+qt_add_qml_module(pickett-gui
+    URI Pickett
+    VERSION 1.0
+    QML_FILES
+        qml/Main.qml
+        qml/WelcomePage.qml
+        qml/ViewerPage.qml
+        qml/SpectrumPlot.qml
+    SOURCES
+        src/models/spectrumdata.cpp
+        src/models/spectrumdata.h
+        src/plot/spectrumplotitem.cpp
+        src/plot/spectrumplotitem.h
 )
 
 target_link_libraries(pickett-gui PRIVATE
     parsers
-    Qt6::Widgets
-    Qt6::Charts
+    Qt6::Quick
 )
 
 set_target_properties(pickett-gui PROPERTIES
@@ -50,7 +60,6 @@ set_target_properties(pickett-gui PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
 )
 
 include(GNUInstallDirs)
