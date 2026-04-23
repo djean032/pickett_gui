@@ -1,5 +1,6 @@
 #include "spectrumdata.h"
 #include "parsers/spe_parser.h"
+#include <QUrl>
 #include <algorithm>
 #include <iostream>
 
@@ -12,10 +13,9 @@ void SpectrumData::loadFile(const QString &filePath)
 {
     // Convert file URL to local path if needed
     QString localPath = filePath;
-    if (localPath.startsWith("file:///")) {
-        localPath = localPath.mid(8);
-    } else if (localPath.startsWith("file://")) {
-        localPath = localPath.mid(7);
+    QUrl url(filePath);
+    if (url.isLocalFile()) {
+        localPath = url.toLocalFile();
     }
 
     std::cout << "Loading: " << localPath.toStdString() << std::endl;
