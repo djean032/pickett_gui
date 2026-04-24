@@ -7,6 +7,7 @@ import Pickett 1.0
 Page {
     id: page
     property var dataModel
+    focus: true
 
     ColumnLayout {
         anchors.fill: parent
@@ -18,6 +19,7 @@ Page {
 
             Button {
                 text: qsTr("← Back")
+                focusPolicy: Qt.NoFocus
                 onClicked: {
                     page.StackView.view.pop()
                 }
@@ -25,6 +27,7 @@ Page {
 
             Button {
                 text: qsTr("Load Spectrum")
+                focusPolicy: Qt.NoFocus
                 onClicked: fileDialog.open()
             }
 
@@ -36,11 +39,14 @@ Page {
         }
 
         SpectrumPlot {
+            id: spectrumPlot
             Layout.fillWidth: true
             Layout.fillHeight: true
             spectrumData: dataModel
         }
     }
+
+    Keys.forwardTo: [spectrumPlot]
 
     FileDialog {
         id: fileDialog
