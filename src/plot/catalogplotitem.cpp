@@ -158,15 +158,15 @@ QSGNode *CatalogPlotItem::updatePaintNode(QSGNode *oldNode,
     case 2:
       return QColor("#4363D8"); // Blue
     case 3:
-      return QColor("#FFE119"); // Yellow
+      return QColor("#FF9900"); // Orange
     case 4:
       return QColor("#911EB4"); // Purple
     case 5:
-      return QColor("#42D4F4"); // Cyan
+      return QColor("#00CED1"); // DarkTurquoise
     case 6:
-      return QColor("#F032E6"); // Magenta
+      return QColor("#FF1493"); // DeepPink
     case 7:
-      return QColor("#FF4500"); // OrangeRed
+      return QColor("#32CD32"); // LimeGreen
     default:
       return QColor("white");
     }
