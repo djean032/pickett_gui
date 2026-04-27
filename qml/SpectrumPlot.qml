@@ -52,10 +52,10 @@ FocusScope {
             anchors.margins: 1
             spacing: 0
 
-            // Shared readout bar (70px)
+            // Shared readout bar (100 px)
             Rectangle {
                 width: parent.width
-                height: (plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0
+                height: (plotItem.hasData || catalogPlotItem.hasData) ? 100 : 0
                 color: "gray"
                 visible: height > 0
 
@@ -65,7 +65,8 @@ FocusScope {
                     anchors.left: parent.left
                     anchors.leftMargin: 6
                     color: "white"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
+                    font.bold: true
                     
                     property var lineInfo: {
                         if (!viewport.hasData) return {};
@@ -81,8 +82,11 @@ FocusScope {
                         var prefix = "";
                         if (lineInfo.totalLines > 1) {
                             prefix = "Line " + (lineInfo.lineIndex + 1) + "/" + 
-                                     lineInfo.totalLines + " | ";
+                                     lineInfo.totalLines + " | " + "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz" + " | ";
+                        } else {
+                            prefix = "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz" + " | ";
                         }
+
                         var upper = "";
                         var lower = "";
                         if (lineInfo.upperLabels && lineInfo.upperQN) {
@@ -92,12 +96,12 @@ FocusScope {
                             }
                         }
                         if (lineInfo.lowerLabels && lineInfo.lowerQN) {
-                            for (var i = 0; i < lineInfo.lowerLabels.length; ++i) {
-                                if (i > 0) lower += ", ";
-                                lower += lineInfo.lowerLabels[i] + ": " + lineInfo.lowerQN[i];
+                            for (var j = 0; j < lineInfo.lowerLabels.length; ++j) {
+                                if (j > 0) lower += ", ";
+                                lower += lineInfo.lowerLabels[j] + ": " + lineInfo.lowerQN[j];
                             }
                         }
-                        return prefix + "Freq: " + lineInfo.freq.toFixed(4) + " MHz\n" +
+                        return prefix + "Predicted Freq: " + lineInfo.freq.toFixed(4) + " MHz\n" +
                                "Upper: " + upper + "\nLower: " + lower + "\n" +
                                "Int: " + lineInfo.lgint.toFixed(4);
                     }
@@ -108,7 +112,7 @@ FocusScope {
             Item {
                 width: parent.width
                 height: {
-                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0);
+                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 100 : 0);
                     if (!plotItem.hasData) return 0;
                     if (catalogPlotItem.hasData) return Math.max(0, totalH / 2);
                     return Math.max(0, totalH);
@@ -208,7 +212,7 @@ FocusScope {
             Item {
                 width: parent.width
                 height: {
-                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0);
+                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 100 : 0);
                     if (!catalogPlotItem.hasData) return 0;
                     if (plotItem.hasData) return Math.max(0, totalH / 2);
                     return Math.max(0, totalH);
