@@ -10,21 +10,20 @@ Window {
     height: 768
     title: qsTr("Pickett Spectral Viewer")
 
-    StackView {
-        id: stack
+    property int currentPage: 0
+
+    StackLayout {
         anchors.fill: parent
+        currentIndex: root.currentPage
 
-        initialItem: WelcomePage {
-            onNavigateToViewer: {
-                stack.push(viewerPageComponent)
-            }
+        WelcomePage {
+            onNavigateToViewer: root.currentPage = 1
         }
-    }
 
-    Component {
-        id: viewerPageComponent
         ViewerPage {
+            id: viewerPage
             dataModel: spectrumData
+            onBack: root.currentPage = 0
         }
     }
 }

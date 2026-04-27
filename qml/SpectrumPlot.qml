@@ -5,10 +5,45 @@ import Pickett 1.0
 FocusScope {
     id: root
     property var spectrumData
+    property var catalogData
+
+    // Shared viewport state for both plots
+    ViewportModel {
+        id: viewport
+        catalogData: root.catalogData
+    }
+
+    // Sync viewport bounds when spectrum data loads/changes
+    Connections {
+        target: root.spectrumData
+        function onDataChanged() {
+            if (root.spectrumData && root.spectrumData.hasData) {
+                viewport.setDataBounds(root.spectrumData.xMin, root.spectrumData.xMax)
+                // If this is the only loaded data, reset view to show it fully
+                if (!root.catalogData || !root.catalogData.hasData) {
+                    viewport.resetView()
+                }
+            }
+        }
+    }
+
+    // Sync viewport bounds when catalog data loads/changes
+    Connections {
+        target: root.catalogData
+        function onDataChanged() {
+            if (root.catalogData && root.catalogData.hasData) {
+                viewport.setDataBounds(root.catalogData.xMin, root.catalogData.xMax)
+                // If this is the only loaded data, reset view to show it fully
+                if (!root.spectrumData || !root.spectrumData.hasData) {
+                    viewport.resetView()
+                }
+            }
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
-        color: "blue"
+        color: "black"
         border.color: "gray"
         border.width: 1
 
@@ -17,28 +52,68 @@ FocusScope {
             anchors.margins: 1
             spacing: 0
 
-            // Top readout bar
+            // Shared readout bar (70px)
             Rectangle {
                 width: parent.width
-                height: 22
+                height: (plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0
                 color: "gray"
-                visible: plotItem.hasData
+                visible: height > 0
 
                 Text {
+                    id: readoutText
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.leftMargin: 6
-                    text: "Current Frequency: " + plotItem.cursorX.toFixed(2) + " MHz"
                     color: "white"
                     font.pixelSize: 14
-                }
-            }
+                    
+                    property var lineInfo: {
+                        if (!viewport.hasData) return {};
+                        var pixel = (viewport.cursorX - viewport.viewXMin) / 
+                                   (viewport.viewXMax - viewport.viewXMin) * plotItem.width;
+                        return viewport.lineAtPixel(pixel, plotItem.width);
+                    }
+                    
+                    text: {
+                        if (!lineInfo.found) {
+                            return "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz";
+                        }
+                        var prefix = "";
+                        if (lineInfo.totalLines > 1) {
+                            prefix = "Line " + (lineInfo.lineIndex + 1) + "/" + 
+                                     lineInfo.totalLines + " | ";
+                        }
+                        var upper = "";
+                        var lower = "";
+                        if (lineInfo.upperLabels && lineInfo.upperQN) {
+                            for (var i = 0; i < lineInfo.upperLabels.length; ++i) {
+                                if (i > 0) upper += ", ";
+                                upper += lineInfo.upperLabels[i] + ": " + lineInfo.upperQN[i];
+                            }
+                        }
+                        if (lineInfo.lowerLabels && lineInfo.lowerQN) {
+                            for (var i = 0; i < lineInfo.lowerLabels.length; ++i) {
+                                if (i > 0) lower += ", ";
+                                lower += lineInfo.lowerLabels[i] + ": " + lineInfo.lowerQN[i];
+                            }
+                        }
+                        return prefix + "Freq: " + lineInfo.freq.toFixed(4) + " MHz\n" +
+                               "Upper: " + upper + "\nLower: " + lower + "\n" +
+                               "Int: " + lineInfo.lgint.toFixed(4);
+                    }
+                    }
+                  }
 
-            // Plot area
-            Rectangle {
+            // Spectrum plot area (full size when it's the only one loaded, half when both are loaded)
+            Item {
                 width: parent.width
-                height: parent.height - 22
-                color: "blue"
+                height: {
+                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0);
+                    if (!plotItem.hasData) return 0;
+                    if (catalogPlotItem.hasData) return Math.max(0, totalH / 2);
+                    return Math.max(0, totalH);
+                }
+                visible: height > 0
                 clip: true
 
                 SpectrumPlotItem {
@@ -47,26 +122,31 @@ FocusScope {
                     anchors.margins: 2
                     anchors.bottomMargin: 36
                     data: root.spectrumData
+                    viewport: viewport
                 }
 
-                // Cursor + axis overlay (hidden until data loaded)
+                // Cursor + axis overlay for spectrum
                 Item {
                     anchors.fill: plotItem
                     visible: plotItem.hasData
 
-                    // Cursor line (follows cursorX)
+                    // Cursor line
                     Rectangle {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         width: 2
                         color: "yellow"
                         z: 10
-                        x: (plotItem.cursorX - plotItem.viewXMin) / (plotItem.viewXMax - plotItem.viewXMin) * plotItem.width
+                        x: {
+                            var range = viewport.viewXMax - viewport.viewXMin;
+                            if (range <= 0 || parent.width <= 0) return 0;
+                            return (viewport.cursorX - viewport.viewXMin) / range * parent.width;
+                        }
                     }
 
                     // X-axis line
                     Rectangle {
-                        id: xAxisLine
+                        id: xAxisLineSpectrum
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -74,12 +154,16 @@ FocusScope {
                         color: "white"
                     }
 
-                    // Major ticks and labels (grow downward from x-axis)
+                    // Major ticks and labels
                     Repeater {
-                        model: plotItem.xTickPositions
+                        model: viewport.xTickPositions
                         Item {
-                            x: (modelData - plotItem.viewXMin) / (plotItem.viewXMax - plotItem.viewXMin) * plotItem.width - width / 2
-                            anchors.top: xAxisLine.bottom
+                            x: {
+                                var range = viewport.viewXMax - viewport.viewXMin;
+                                if (range <= 0 || parent.width <= 0) return 0;
+                                return (modelData - viewport.viewXMin) / range * parent.width - width / 2;
+                            }
+                            anchors.top: xAxisLineSpectrum.bottom
                             height: 32
                             width: 2
 
@@ -102,12 +186,126 @@ FocusScope {
                         }
                     }
 
-                    // Minor ticks (grow downward from x-axis)
+                    // Minor ticks
                     Repeater {
-                        model: plotItem.xMinorPositions
+                        model: viewport.xMinorPositions
                         Rectangle {
-                            x: (modelData - plotItem.viewXMin) / (plotItem.viewXMax - plotItem.viewXMin) * plotItem.width - width / 2
-                            anchors.top: xAxisLine.bottom
+                            x: {
+                                var range = viewport.viewXMax - viewport.viewXMin;
+                                if (range <= 0 || parent.width <= 0) return 0;
+                                return (modelData - viewport.viewXMin) / range * parent.width - width / 2;
+                            }
+                            anchors.top: xAxisLineSpectrum.bottom
+                            width: 1
+                            height: 6
+                            color: "white"
+                        }
+                    }
+                }
+            }
+
+            // Catalog plot area (full size when it's the only one loaded, half when both are loaded)
+            Item {
+                width: parent.width
+                height: {
+                    var totalH = parent.height - ((plotItem.hasData || catalogPlotItem.hasData) ? 70 : 0);
+                    if (!catalogPlotItem.hasData) return 0;
+                    if (plotItem.hasData) return Math.max(0, totalH / 2);
+                    return Math.max(0, totalH);
+                }
+                visible: height > 0
+                clip: true
+
+                CatalogPlotItem {
+                    id: catalogPlotItem
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    anchors.bottomMargin: 36
+                    catalogData: root.catalogData
+                    viewport: viewport
+                }
+
+                // Separator line between spectrum and catalog (only when both are present)
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: "gray"
+                    visible: plotItem.hasData && catalogPlotItem.hasData
+                }
+
+                // Cursor + axis overlay for catalog
+                Item {
+                    anchors.fill: catalogPlotItem
+                    visible: catalogPlotItem.hasData
+
+                    // Cursor line
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 2
+                        color: "yellow"
+                        z: 10
+                        x: {
+                            var range = viewport.viewXMax - viewport.viewXMin;
+                            if (range <= 0 || parent.width <= 0) return 0;
+                            return (viewport.cursorX - viewport.viewXMin) / range * parent.width;
+                        }
+                    }
+
+                    // X-axis line
+                    Rectangle {
+                        id: xAxisLineCatalog
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 2
+                        color: "white"
+                    }
+
+                    // Major ticks and labels
+                    Repeater {
+                        model: viewport.xTickPositions
+                        Item {
+                            x: {
+                                var range = viewport.viewXMax - viewport.viewXMin;
+                                if (range <= 0 || parent.width <= 0) return 0;
+                                return (modelData - viewport.viewXMin) / range * parent.width - width / 2;
+                            }
+                            anchors.top: xAxisLineCatalog.bottom
+                            height: 32
+                            width: 2
+
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: 2
+                                height: 12
+                                color: "white"
+                            }
+
+                            Text {
+                                anchors.top: parent.top
+                                anchors.topMargin: 14
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: Math.round(modelData).toString()
+                                color: "white"
+                                font.pixelSize: 14
+                            }
+                        }
+                    }
+
+                    // Minor ticks
+                    Repeater {
+                        model: viewport.xMinorPositions
+                        Rectangle {
+                            x: {
+                                var range = viewport.viewXMax - viewport.viewXMin;
+                                if (range <= 0 || parent.width <= 0) return 0;
+                                return (modelData - viewport.viewXMin) / range * parent.width - width / 2;
+                            }
+                            anchors.top: xAxisLineCatalog.bottom
                             width: 1
                             height: 6
                             color: "white"
@@ -139,19 +337,19 @@ FocusScope {
 
         switch (event.key) {
         case Qt.Key_A:
-            plotItem.panX(-panStep);
+            viewport.panX(-panStep);
             event.accepted = true;
             break;
         case Qt.Key_S:
-            plotItem.panX(panStep);
+            viewport.panX(panStep);
             event.accepted = true;
             break;
         case Qt.Key_E:
-            plotItem.zoomX(1.0 + zoomStep);
+            viewport.zoomX(1.0 + zoomStep);
             event.accepted = true;
             break;
         case Qt.Key_Q:
-            plotItem.zoomX(1.0 - zoomStep);
+            viewport.zoomX(1.0 - zoomStep);
             event.accepted = true;
             break;
         case Qt.Key_Z:
@@ -171,15 +369,23 @@ FocusScope {
             event.accepted = true;
             break;
         case Qt.Key_K:
-            plotItem.moveCursor(-cursorStep);
+            viewport.moveCursor(-cursorStep, plotItem.width);
             event.accepted = true;
             break;
         case Qt.Key_L:
-            plotItem.moveCursor(cursorStep);
+            viewport.moveCursor(cursorStep, plotItem.width);
             event.accepted = true;
             break;
         case Qt.Key_0:
-            plotItem.resetView();
+            viewport.resetView();
+            event.accepted = true;
+            break;
+        case Qt.Key_Up:
+            viewport.cycleLineUp();
+            event.accepted = true;
+            break;
+        case Qt.Key_Down:
+            viewport.cycleLineDown();
             event.accepted = true;
             break;
         }

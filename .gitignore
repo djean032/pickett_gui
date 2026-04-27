@@ -82,3 +82,4 @@ CMakeLists.txt.user*
 /build*/
 /Testing/Temporary
 /.cache/clangd/index
+/test_catalog_viewport

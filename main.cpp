@@ -2,7 +2,10 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include "src/models/spectrumdata.h"
+#include "src/models/viewportmodel.h"
+#include "src/models/catalogdata.h"
 #include "src/plot/spectrumplotitem.h"
+#include "src/plot/catalogplotitem.h"
 
 int main(int argc, char *argv[])
 {
@@ -10,7 +13,10 @@ int main(int argc, char *argv[])
 
     // Register C++ types for QML (required for custom QQuickItem)
     qmlRegisterType<SpectrumData>("Pickett", 1, 0, "SpectrumData");
+    qmlRegisterType<ViewportModel>("Pickett", 1, 0, "ViewportModel");
+    qmlRegisterType<CatalogData>("Pickett", 1, 0, "CatalogData");
     qmlRegisterType<SpectrumPlotItem>("Pickett", 1, 0, "SpectrumPlotItem");
+    qmlRegisterType<CatalogPlotItem>("Pickett", 1, 0, "CatalogPlotItem");
 
     QQmlApplicationEngine engine;
 

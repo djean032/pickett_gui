@@ -7,9 +7,9 @@
 namespace pickett {
 
 SpeHeader::SpeHeader()
-    : day(0), month(0), year(0), hour(0), minute(0), second(0),
-      vkmst(0.0f), vkmend(0.0f), grid(0.0f), sampre(0.0f), gain(0.0f),
-      timec(0.0f), phase(0.0f), pps(0.0f), frmod(0.0f), frampl(0.0f) {
+    : day(0), month(0), year(0), hour(0), minute(0), second(0), vkmst(0.0f),
+      vkmend(0.0f), grid(0.0f), sampre(0.0f), gain(0.0f), timec(0.0f),
+      phase(0.0f), pps(0.0f), frmod(0.0f), frampl(0.0f) {
   std::memset(comment, 0, sizeof(comment));
   std::memset(lamp, 0, sizeof(lamp));
   std::memset(sample, 0, sizeof(sample));
@@ -45,7 +45,8 @@ SpeParseResult SpeParser::parse_file(const std::string &filepath) {
 SpeParseResult SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
   SpeParseResult result;
 
-  // Minimum file size: header (170) + at least 1 data point (4) + footer (26) = 200
+  // Minimum file size: header (170) + at least 1 data point (4) + footer (26) =
+  // 200
   if (buffer.size() < 200) {
     result.errors.emplace_back(0, "File too small (minimum 200 bytes)");
     result.success = false;
@@ -78,7 +79,8 @@ SpeParseResult SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
   return result;
 }
 
-bool SpeParser::parse_header(const std::vector<uint8_t> &data, SpeHeader &header,
+bool SpeParser::parse_header(const std::vector<uint8_t> &data,
+                             SpeHeader &header,
                              std::vector<std::pair<int, std::string>> &errors) {
   if (data.size() < 170) {
     errors.emplace_back(0, "Not enough data for header (need 170 bytes)");
@@ -189,7 +191,8 @@ bool SpeParser::parse_data(const std::vector<uint8_t> &data, int32_t &npts,
   return true;
 }
 
-bool SpeParser::parse_footer(const std::vector<uint8_t> &data, SpeFooter &footer,
+bool SpeParser::parse_footer(const std::vector<uint8_t> &data,
+                             SpeFooter &footer,
                              std::vector<std::pair<int, std::string>> &errors) {
   // Footer is 26 bytes at the end
   if (data.size() < 26) {
@@ -231,8 +234,8 @@ bool SpeParser::parse_footer(const std::vector<uint8_t> &data, SpeFooter &footer
   return true;
 }
 
-bool SpeParser::validate_header(const SpeHeader &header,
-                                std::vector<std::pair<int, std::string>> &errors) {
+bool SpeParser::validate_header(
+    const SpeHeader &header, std::vector<std::pair<int, std::string>> &errors) {
   bool valid = true;
 
   // Validate date fields

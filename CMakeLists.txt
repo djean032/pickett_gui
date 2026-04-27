@@ -47,8 +47,14 @@ qt_add_qml_module(pickett-gui
     SOURCES
         src/models/spectrumdata.cpp
         src/models/spectrumdata.h
+        src/models/viewportmodel.cpp
+        src/models/viewportmodel.h
+        src/models/catalogdata.cpp
+        src/models/catalogdata.h
         src/plot/spectrumplotitem.cpp
         src/plot/spectrumplotitem.h
+        src/plot/catalogplotitem.cpp
+        src/plot/catalogplotitem.h
 )
 
 target_link_libraries(pickett-gui PRIVATE

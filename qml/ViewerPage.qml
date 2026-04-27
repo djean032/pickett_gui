@@ -7,7 +7,12 @@ import Pickett 1.0
 Page {
     id: page
     property var dataModel
+    signal back()
     focus: true
+
+    CatalogData {
+        id: catalogData
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -20,15 +25,19 @@ Page {
             Button {
                 text: qsTr("← Back")
                 focusPolicy: Qt.NoFocus
-                onClicked: {
-                    page.StackView.view.pop()
-                }
+                onClicked: page.back()
             }
 
             Button {
                 text: qsTr("Load Spectrum")
                 focusPolicy: Qt.NoFocus
-                onClicked: fileDialog.open()
+                onClicked: spectrumFileDialog.open()
+            }
+
+            Button {
+                text: qsTr("Load Catalog")
+                focusPolicy: Qt.NoFocus
+                onClicked: catalogFileDialog.open()
             }
 
             Label {
@@ -43,22 +52,38 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spectrumData: dataModel
+            catalogData: catalogData
         }
     }
 
     Keys.forwardTo: [spectrumPlot]
 
     FileDialog {
-        id: fileDialog
+        id: spectrumFileDialog
         title: qsTr("Load Spectrum")
         nameFilters: ["All files (*.*)"]
         onAccepted: {
-            console.log("FileDialog accepted, selectedFile:", selectedFile)
+            console.log("Spectrum FileDialog accepted, selectedFile:", selectedFile)
             if (dataModel) {
                 console.log("Calling loadFile with:", selectedFile.toString())
                 dataModel.loadFile(selectedFile)
             } else {
                 console.log("ERROR: dataModel is null")
+            }
+        }
+    }
+
+    FileDialog {
+        id: catalogFileDialog
+        title: qsTr("Load Catalog")
+        nameFilters: ["CAT files (*.cat)", "All files (*.*)"]
+        onAccepted: {
+            console.log("Catalog FileDialog accepted, selectedFile:", selectedFile)
+            if (catalogData) {
+                console.log("Calling loadFile with:", selectedFile.toString())
+                catalogData.loadFile(selectedFile)
+            } else {
+                console.log("ERROR: catalogData is null")
             }
         }
     }
