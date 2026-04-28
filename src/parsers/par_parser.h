@@ -1,6 +1,7 @@
 #ifndef PAR_PARSER_H
 #define PAR_PARSER_H
 
+#include <expected>
 #include <optional>
 #include <string>
 #include <utility>
@@ -55,14 +56,14 @@ struct ParParseResult {
   std::vector<ParParameter> parameters;
   std::vector<std::string> comments; // Lines starting with ! (preserved as-is)
   std::vector<std::pair<int, std::string>> errors; // line_number, message
-  bool success;
-
-  ParParseResult() : success(true) {}
 };
+
+using ParParseErrors = std::vector<std::pair<int, std::string>>;
+using ParParseExpected = std::expected<ParParseResult, ParParseErrors>;
 
 class ParParser {
 public:
-  static ParParseResult parse_file(const std::string &filepath);
+  static ParParseExpected parse_file(const std::string &filepath);
 
   // Write .par file from parsed data
   static bool write(std::ostream &os, const ParParseResult &data,

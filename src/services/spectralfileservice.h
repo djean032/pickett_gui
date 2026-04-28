@@ -2,6 +2,7 @@
 #define SPECTRALFILESERVICE_H
 
 #include "errors/parser_error.h"
+#include "errors/service_failure.h"
 
 #include <QObject>
 #include <QString>
@@ -18,7 +19,6 @@ public:
   };
 
   struct SpectrumResult {
-    bool success = false;
     quint64 requestId = 0;
     QString sourcePath;
     QVector<SpectrumPoint> points;
@@ -27,6 +27,8 @@ public:
     double fIncrMHz = 0.0;
     QVector<ParserError> errors;
   };
+
+  using SpectrumLoadExpected = ServiceExpected<SpectrumResult>;
 
   struct CatalogLine {
     double freq = 0.0;
@@ -41,12 +43,13 @@ public:
   };
 
   struct CatalogResult {
-    bool success = false;
     quint64 requestId = 0;
     QString sourcePath;
     QVector<CatalogLine> lines;
     QVector<ParserError> errors;
   };
+
+  using CatalogLoadExpected = ServiceExpected<CatalogResult>;
 
   struct LinLine {
     QVector<int> qn;
@@ -56,18 +59,19 @@ public:
   };
 
   struct LinResult {
-    bool success = false;
     quint64 requestId = 0;
     QString sourcePath;
     QVector<LinLine> lines;
     QVector<ParserError> errors;
   };
 
+  using LinLoadExpected = ServiceExpected<LinResult>;
+
   explicit SpectralFileService(QObject *parent = nullptr);
 
-  SpectrumResult loadSpe(const QString &filePath) const;
-  CatalogResult loadCat(const QString &filePath) const;
-  LinResult loadLin(const QString &filePath) const;
+  SpectrumLoadExpected loadSpe(const QString &filePath) const;
+  CatalogLoadExpected loadCat(const QString &filePath) const;
+  LinLoadExpected loadLin(const QString &filePath) const;
 
   quint64 loadSpeAsync(const QString &filePath);
   quint64 loadCatAsync(const QString &filePath);

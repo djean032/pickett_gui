@@ -130,4 +130,4 @@ qml/             # QML UI files
 - Tests are disabled by default; enable with `PICKETT_BUILD_TESTS=ON`
 - Test data directory is available via `TEST_DATA_DIR` macro in tests
 - The project uses Qt6 Quick module for QML-based UI
-- C++17 is required (`set(CMAKE_CXX_STANDARD 17)`)
+- C++23 is required (`set(CMAKE_CXX_STANDARD 23)`)

@@ -255,14 +255,12 @@ bool ParParser::parse_parameter_line(const std::string &line,
   return true;
 }
 
-ParParseResult ParParser::parse_file(const std::string &filepath) {
+ParParseExpected ParParser::parse_file(const std::string &filepath) {
   ParParseResult result;
   std::ifstream file(filepath);
 
   if (!file.is_open()) {
-    result.success = false;
-    result.errors.push_back({0, "Failed to open file: " + filepath});
-    return result;
+    return std::unexpected(ParParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   std::string line;
@@ -277,10 +275,8 @@ ParParseResult ParParser::parse_file(const std::string &filepath) {
     }
     result.header.title = line;
   } else {
-    result.success = false;
-    result.errors.push_back(
-        {line_num, "Empty file or failed to read title line"});
-    return result;
+    return std::unexpected(
+        ParParseErrors{{line_num, "Empty file or failed to read title line"}});
   }
 
   // Line 2: Header parameters
@@ -296,9 +292,7 @@ ParParseResult ParParser::parse_file(const std::string &filepath) {
       // Continue anyway - might be recoverable
     }
   } else {
-    result.success = false;
-    result.errors.push_back({line_num, "Missing header line"});
-    return result;
+    return std::unexpected(ParParseErrors{{line_num, "Missing header line"}});
   }
 
   // Line 3+: Option lines
@@ -416,7 +410,7 @@ char ParParser::encode_chr(const std::vector<ParOptionLine> &options) {
 bool ParParser::write(std::ostream &os, const ParParseResult &data,
                       std::string &error) {
   // Check if data is valid
-  if (!data.success && data.parameters.empty()) {
+  if (data.parameters.empty()) {
     error = "No valid parameters to write";
     return false;
   }

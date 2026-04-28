@@ -152,14 +152,12 @@ bool IntParser::parse_dipole_line(const std::string &line, IntDipole &dipole,
   return true;
 }
 
-IntParseResult IntParser::parse_file(const std::string &filepath) {
+IntParseExpected IntParser::parse_file(const std::string &filepath) {
   IntParseResult result;
   std::ifstream file(filepath);
 
   if (!file.is_open()) {
-    result.success = false;
-    result.errors.push_back({0, "Failed to open file: " + filepath});
-    return result;
+    return std::unexpected(IntParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   std::string line;
@@ -173,10 +171,8 @@ IntParseResult IntParser::parse_file(const std::string &filepath) {
     }
     result.header.title = line;
   } else {
-    result.success = false;
-    result.errors.push_back(
-        {line_num, "Empty file or failed to read title line"});
-    return result;
+    return std::unexpected(
+        IntParseErrors{{line_num, "Empty file or failed to read title line"}});
   }
 
   // Line 2: Header parameters
@@ -192,9 +188,7 @@ IntParseResult IntParser::parse_file(const std::string &filepath) {
       // Continue anyway - might be recoverable
     }
   } else {
-    result.success = false;
-    result.errors.push_back({line_num, "Missing header line"});
-    return result;
+    return std::unexpected(IntParseErrors{{line_num, "Missing header line"}});
   }
 
   // Line 3+: Dipole lines
@@ -253,7 +247,7 @@ static int encode_flags(int irflg, int outflg, int strflg, int egyflg) {
 bool IntParser::write(std::ostream &os, const IntParseResult &data,
                       std::string &error) {
   // Check if data is valid
-  if (!data.success && data.dipoles.empty()) {
+  if (data.dipoles.empty()) {
     error = "No valid dipoles to write";
     return false;
   }

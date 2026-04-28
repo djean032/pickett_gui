@@ -1,4 +1,7 @@
 #include "spectrumdata.h"
+
+#include "errors/service_failure.h"
+
 #include <algorithm>
 
 namespace {
@@ -11,31 +14,12 @@ QString firstErrorMessage(const QVector<ParserError> &errors,
   return errors[0].message;
 }
 
-bool hasFatalError(const QVector<ParserError> &errors) {
-  for (const auto &error : errors) {
-    if (error.isFatal) {
-      return true;
-    }
-  }
-  return false;
-}
-
-QString firstFatalMessage(const QVector<ParserError> &errors) {
-  for (const auto &error : errors) {
-    if (error.isFatal) {
-      return error.message;
-    }
-  }
-  return QString();
-}
-
-QString firstWarningMessage(const QVector<ParserError> &errors) {
-  for (const auto &error : errors) {
-    if (!error.isFatal) {
-      return error.message;
-    }
-  }
-  return QString();
+ServiceFailure toFailure(const SpectralFileService::SpectrumResult &result) {
+  ServiceFailure failure;
+  failure.errors = result.errors;
+  failure.domain = ParserDomain::Spe;
+  failure.sourcePath = result.sourcePath;
+  return failure;
 }
 
 } // namespace
@@ -90,23 +74,24 @@ void SpectrumData::onSpeLoaded(
 
   setLoading(false);
 
-  if (!result.success || result.points.isEmpty()) {
+  if (result.points.isEmpty()) {
     clearWarning();
-    if (hasFatalError(result.errors) || result.errors.isEmpty()) {
-      const QString fatalMessage = firstFatalMessage(result.errors);
+    const ServiceFailure failure = toFailure(result);
+    if (hasFatalError(failure) || result.errors.isEmpty()) {
+      const QString fatalMessage = firstFatalMessage(failure);
       setErrorMessage(!fatalMessage.isEmpty()
                           ? fatalMessage
                           : firstErrorMessage(result.errors,
                                               "Failed to load spectrum file"));
     } else {
       clearError();
-      setWarningMessage(firstWarningMessage(result.errors));
+      setWarningMessage(firstWarningMessage(failure));
     }
     return;
   }
 
   clearError();
-  const QString warning = firstWarningMessage(result.errors);
+  const QString warning = firstWarningMessage(toFailure(result));
   if (!warning.isEmpty()) {
     setWarningMessage(warning);
   } else {

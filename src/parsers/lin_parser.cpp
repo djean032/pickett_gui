@@ -10,14 +10,12 @@ namespace pickett {
 
 // parse_int_safe and parse_double_safe now come from utils.h
 
-LinParseResult LinParser::parse_file(const std::string &filepath) {
+LinParseExpected LinParser::parse_file(const std::string &filepath) {
   LinParseResult result;
   std::ifstream file(filepath);
 
   if (!file.is_open()) {
-    result.success = false;
-    result.errors.push_back({0, "Failed to open file: " + filepath});
-    return result;
+    return std::unexpected(LinParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   std::string line;
@@ -183,7 +181,7 @@ std::string LinParser::format_double(double value, bool is_scientific) {
 bool LinParser::write(std::ostream &os, const LinParseResult &data,
                       std::string &error) {
   // Check if data is valid
-  if (!data.success && data.records.empty()) {
+  if (data.records.empty()) {
     error = "No valid records to write";
     return false;
   }

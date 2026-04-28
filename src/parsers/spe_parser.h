@@ -2,6 +2,7 @@
 #define SPE_PARSER_H
 
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,7 +52,6 @@ struct SpeParseResult {
   std::vector<int32_t> intensities; // 4-byte signed integer intensities
   SpeFooter footer;
   std::vector<std::pair<int, std::string>> errors;
-  bool success;
 
   // Computed properties (all frequencies in MHz)
   double get_fstart_mhz() const { return footer.fstart; }
@@ -59,16 +59,19 @@ struct SpeParseResult {
   double get_fincr_mhz() const { return footer.fincr; }
   double get_span_mhz() const { return footer.fend - footer.fstart; }
 
-  SpeParseResult() : npts(0), success(true) {}
+  SpeParseResult() : npts(0) {}
 };
+
+using SpeParseErrors = std::vector<std::pair<int, std::string>>;
+using SpeParseExpected = std::expected<SpeParseResult, SpeParseErrors>;
 
 class SpeParser {
 public:
   // Parse a binary spectral file
-  static SpeParseResult parse_file(const std::string &filepath);
+  static SpeParseExpected parse_file(const std::string &filepath);
 
   // Parse from memory buffer (for testing or embedded data)
-  static SpeParseResult parse_buffer(const std::vector<uint8_t> &buffer);
+  static SpeParseExpected parse_buffer(const std::vector<uint8_t> &buffer);
 
 private:
   static bool parse_header(const std::vector<uint8_t> &data, SpeHeader &header,

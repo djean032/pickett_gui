@@ -1,6 +1,7 @@
 #ifndef CAT_PARSER_H
 #define CAT_PARSER_H
 
+#include <expected>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,10 +30,10 @@ struct CatRecord {
 struct CatParseResult {
   std::vector<CatRecord> records;
   std::vector<std::pair<int, std::string>> errors; // line_number, message
-  bool success; // false if critical error (file not found, all bad QFMT)
-
-  CatParseResult() : success(true) {}
 };
+
+using CatParseErrors = std::vector<std::pair<int, std::string>>;
+using CatParseExpected = std::expected<CatParseResult, CatParseErrors>;
 
 struct QNFormat {
   int q;   // Base format code (QNFMT / 100)
@@ -43,7 +44,7 @@ struct QNFormat {
 class CatParser {
 public:
   // Parse .cat file, returns result with records and any errors
-  static CatParseResult parse_file(const std::string &filepath);
+  static CatParseExpected parse_file(const std::string &filepath);
 
   // Decode QNFMT into components
   static QNFormat decode_qnfmt(int qnfmt);

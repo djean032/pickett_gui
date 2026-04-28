@@ -1,6 +1,7 @@
 #ifndef INT_PARSER_H
 #define INT_PARSER_H
 
+#include <expected>
 #include <optional>
 #include <string>
 #include <utility>
@@ -52,14 +53,14 @@ struct IntParseResult {
   IntHeader header;
   std::vector<IntDipole> dipoles;
   std::vector<std::pair<int, std::string>> errors;
-  bool success;
-
-  IntParseResult() : success(true) {}
 };
+
+using IntParseErrors = std::vector<std::pair<int, std::string>>;
+using IntParseExpected = std::expected<IntParseResult, IntParseErrors>;
 
 class IntParser {
 public:
-  static IntParseResult parse_file(const std::string &filepath);
+  static IntParseExpected parse_file(const std::string &filepath);
 
   // Write .int file from parsed data
   static bool write(std::ostream &os, const IntParseResult &data,

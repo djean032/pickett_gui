@@ -1,6 +1,7 @@
 #ifndef FIT_PARSER_H
 #define FIT_PARSER_H
 
+#include <expected>
 #include <optional>
 #include <string>
 #include <utility>
@@ -71,16 +72,18 @@ struct FitParseResult {
   std::vector<FitLineRecord> lines;
   std::vector<FitCorrelationEntry> correlations;
   std::vector<std::pair<int, std::string>> errors;
-  bool success;
   int rejected_line_count; // Count of rejected lines/blends (SPFIT counts
                            // blends as 1)
 
-  FitParseResult() : success(true), rejected_line_count(0) {}
+  FitParseResult() : rejected_line_count(0) {}
 };
+
+using FitParseErrors = std::vector<std::pair<int, std::string>>;
+using FitParseExpected = std::expected<FitParseResult, FitParseErrors>;
 
 class FitParser {
 public:
-  static FitParseResult parse_file(const std::string &filepath);
+  static FitParseExpected parse_file(const std::string &filepath);
 
 private:
   static bool

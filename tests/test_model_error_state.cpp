@@ -86,7 +86,6 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
 
     SpectralFileService::SpectrumResult result;
     result.requestId = 0;
-    result.success = true;
 
     SpectralFileService::SpectrumPoint point;
     point.frequencyMHz = 100.0;
@@ -115,7 +114,6 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
 
     SpectralFileService::CatalogResult result;
     result.requestId = 0;
-    result.success = true;
 
     SpectralFileService::CatalogLine line;
     line.freq = 100.0;

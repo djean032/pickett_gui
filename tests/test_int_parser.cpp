@@ -10,25 +10,25 @@ using namespace pickett;
 TEST_CASE("IntParser parses actual test file", "[int_parser]") {
     auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
-    INFO("Success: " << result.success);
-    INFO("Title: " << result.header.title);
-    INFO("FLAGS: " << result.header.flags);
-    INFO("IRFLG: " << result.header.irflg);
-    INFO("OUTFLG: " << result.header.outflg);
-    INFO("STRFLG: " << result.header.strflg);
-    INFO("EGYFLG: " << result.header.egyflg);
-    INFO("Dipoles: " << result.dipoles.size());
-    INFO("Errors: " << result.errors.size());
+    INFO("Success: " << result.has_value());
+    INFO("Title: " << result->header.title);
+    INFO("FLAGS: " << result->header.flags);
+    INFO("IRFLG: " << result->header.irflg);
+    INFO("OUTFLG: " << result->header.outflg);
+    INFO("STRFLG: " << result->header.strflg);
+    INFO("EGYFLG: " << result->header.egyflg);
+    INFO("Dipoles: " << result->dipoles.size());
+    INFO("Errors: " << (result.has_value() ? result->errors.size() : result.error().size()));
 
-    CHECK(result.success);
-    CHECK(!result.header.title.empty());
-    CHECK(result.dipoles.size() == 24);  // 26 lines - 2 non-dipole lines = 24 dipoles
+    CHECK(result.has_value());
+    CHECK(!result->header.title.empty());
+    CHECK(result->dipoles.size() == 24);  // 26 lines - 2 non-dipole lines = 24 dipoles
 
     // Check first dipole
-    if (!result.dipoles.empty()) {
-        CHECK(result.dipoles[0].idip == 1);  // a dipole, ground state
-        CHECK(result.dipoles[0].dipole == 3.6924);
-        CHECK(result.dipoles[0].label == "a dipole moment gs");
+    if (!result->dipoles.empty()) {
+        CHECK(result->dipoles[0].idip == 1);  // a dipole, ground state
+        CHECK(result->dipoles[0].dipole == 3.6924);
+        CHECK(result->dipoles[0].label == "a dipole moment gs");
     }
 }
 
@@ -94,53 +94,53 @@ TEST_CASE("IntParser handles negative IDIP", "[int_parser]") {
 TEST_CASE("IntParser handles file not found", "[int_parser]") {
     auto result = IntParser::parse_file("nonexistent_file.int");
 
-    CHECK(!result.success);
-    CHECK(result.dipoles.empty());
-    REQUIRE(!result.errors.empty());
-    CHECK(result.errors[0].first == 0);
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().empty());
+    CHECK(result.error()[0].first == 0);
 }
 
 TEST_CASE("IntParser extracts dipole labels", "[int_parser]") {
     auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
-    CHECK(result.success);
-    REQUIRE(result.dipoles.size() >= 6);
+    CHECK(result.has_value());
+    REQUIRE(result->dipoles.size() >= 6);
 
     // Check first 6 dipole labels from the file
-    CHECK(result.dipoles[0].label == "a dipole moment gs");
-    CHECK(result.dipoles[1].label == "b dipole moment gs");
-    CHECK(result.dipoles[2].label == "c dipole moment gs");
-    CHECK(result.dipoles[3].label == "a dipole moment 27");
-    CHECK(result.dipoles[4].label == "b dipole moment 27");
-    CHECK(result.dipoles[5].label == "c dipole moment 27");
+    CHECK(result->dipoles[0].label == "a dipole moment gs");
+    CHECK(result->dipoles[1].label == "b dipole moment gs");
+    CHECK(result->dipoles[2].label == "c dipole moment gs");
+    CHECK(result->dipoles[3].label == "a dipole moment 27");
+    CHECK(result->dipoles[4].label == "b dipole moment 27");
+    CHECK(result->dipoles[5].label == "c dipole moment 27");
 }
 
 TEST_CASE("IntParser integration with ParParser for nvib_digits", "[int_parser]") {
     // Load par file to get nvib context
     auto par_result = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.var");
-    CHECK(par_result.success);
-    REQUIRE(!par_result.options.empty());
+    CHECK(par_result.has_value());
+    REQUIRE(par_result.has_value());
+    REQUIRE(!par_result->options.empty());
 
-    int nvib = par_result.options[0].nvib.value_or(0);
+    int nvib = par_result->options[0].nvib.value_or(0);
     CHECK(nvib == 18);
     int nvib_digits = (nvib <= 9) ? 1 : (nvib <= 99) ? 2 : 3;
     CHECK(nvib_digits == 2);
 
     // Load int file
     auto int_result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
-    CHECK(int_result.success);
+    CHECK(int_result.has_value());
 
     // Check some IDIPs
-    if (int_result.dipoles.size() > 5) {
+    if (int_result->dipoles.size() > 5) {
         // IDIP 1: ground state, a-type (IDIP=1)
-        auto info0 = int_result.dipoles[0].get_idip_info(nvib_digits);
+        auto info0 = int_result->dipoles[0].get_idip_info(nvib_digits);
         CHECK(info0.v1 == 0);
         CHECK(info0.v2 == 0);
         CHECK(info0.typ == 0);  // Basic dipole
         CHECK(info0.sym == 1);  // a-type
 
         // IDIP 1011: transition in v=1, a-type (decodes to v1=1, v2=1)
-        auto info3 = int_result.dipoles[3].get_idip_info(nvib_digits);
+        auto info3 = int_result->dipoles[3].get_idip_info(nvib_digits);
         CHECK(info3.v1 == 1);   // Both v1 and v2 are 1 (same vibrational state)
         CHECK(info3.v2 == 1);
         CHECK(info3.typ == 0);  // Basic dipole
@@ -151,69 +151,70 @@ TEST_CASE("IntParser integration with ParParser for nvib_digits", "[int_parser]"
 TEST_CASE("IntParser parses dipole values", "[int_parser]") {
     auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
-    CHECK(result.success);
+    CHECK(result.has_value());
 
     // Check that ground state dipoles are 0.0
-    if (result.dipoles.size() >= 3) {
-        CHECK(result.dipoles[0].dipole == 3.6924);  // gs a
-        CHECK(result.dipoles[1].dipole == 1.4958);  // gs b
-        CHECK(result.dipoles[2].dipole == 0.9398);  // gs c
+    if (result->dipoles.size() >= 3) {
+        CHECK(result->dipoles[0].dipole == 3.6924);  // gs a
+        CHECK(result->dipoles[1].dipole == 1.4958);  // gs b
+        CHECK(result->dipoles[2].dipole == 0.9398);  // gs c
     }
 
     // Check non-zero dipole for v=27
-    if (result.dipoles.size() > 5) {
-        CHECK(result.dipoles[3].dipole == 3.6924);  // 27 a
-        CHECK(result.dipoles[4].dipole == 1.4958);  // 27 b
-        CHECK(result.dipoles[5].dipole == 0.9398);  // 27 c
+    if (result->dipoles.size() > 5) {
+        CHECK(result->dipoles[3].dipole == 3.6924);  // 27 a
+        CHECK(result->dipoles[4].dipole == 1.4958);  // 27 b
+        CHECK(result->dipoles[5].dipole == 0.9398);  // 27 c
     }
 }
 
 TEST_CASE("IntParser extracts header fields", "[int_parser]") {
     auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
-    CHECK(result.success);
+    CHECK(result.has_value());
 
     // Check header fields from line 2: 0 00005 267816. 0 120 -8. -8. 750.0 292.
-    CHECK(result.header.flags == 0);
-    CHECK(result.header.irflg == 0);
-    CHECK(result.header.outflg == 0);
-    CHECK(result.header.strflg == 0);
-    CHECK(result.header.egyflg == 0);
-    CHECK(result.header.tag == 00005);  // Species tag
-    CHECK(result.header.qrot == 267816.0);  // Partition function
-    CHECK(result.header.fbgn == 0);  // Beginning F
-    CHECK(result.header.fend == 120);  // Ending F
-    CHECK(std::fabs(result.header.str0 - (-8.0)) < 0.001);  // Log strength cutoff 0
-    CHECK(std::fabs(result.header.str1 - (-8.0)) < 0.001);  // Log strength cutoff 1
-    CHECK(result.header.fqlim == 750.0);  // Frequency limit (GHz)
-    CHECK(result.header.temp == 292.0);  // Temperature (K)
+    CHECK(result->header.flags == 0);
+    CHECK(result->header.irflg == 0);
+    CHECK(result->header.outflg == 0);
+    CHECK(result->header.strflg == 0);
+    CHECK(result->header.egyflg == 0);
+    CHECK(result->header.tag == 00005);  // Species tag
+    CHECK(result->header.qrot == 267816.0);  // Partition function
+    CHECK(result->header.fbgn == 0);  // Beginning F
+    CHECK(result->header.fend == 120);  // Ending F
+    CHECK(std::fabs(result->header.str0 - (-8.0)) < 0.001);  // Log strength cutoff 0
+    CHECK(std::fabs(result->header.str1 - (-8.0)) < 0.001);  // Log strength cutoff 1
+    CHECK(result->header.fqlim == 750.0);  // Frequency limit (GHz)
+    CHECK(result->header.temp == 292.0);  // Temperature (K)
     // maxv defaults to 999 if not in file
 }
 
 TEST_CASE("IntParser write roundtrip with SPCAT", "[int_parser]") {
     // Parse original INT file
     auto original = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
-    REQUIRE(original.success);
-    REQUIRE(original.dipoles.size() > 0);
+    REQUIRE(original.has_value());
+    REQUIRE(original->dipoles.size() > 0);
     
     // Write to _bak.int file
     std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.int";
     std::string error;
-    bool write_ok = IntParser::write_file(bak_file, original, error);
+    bool write_ok = IntParser::write_file(bak_file, original.value(), error);
     CHECK(write_ok);
     
     // Parse the written file and verify it matches
     auto roundtrip = IntParser::parse_file(bak_file);
-    CHECK(roundtrip.success);
-    CHECK(roundtrip.dipoles.size() == original.dipoles.size());
+    CHECK(roundtrip.has_value());
+    REQUIRE(roundtrip.has_value());
+    CHECK(roundtrip->dipoles.size() == original->dipoles.size());
     
     // Compare first few dipoles
-    if (roundtrip.dipoles.size() >= 3) {
-        CHECK(roundtrip.dipoles[0].idip == original.dipoles[0].idip);
-        CHECK(roundtrip.dipoles[0].dipole == Catch::Approx(original.dipoles[0].dipole));
-        CHECK(roundtrip.dipoles[1].idip == original.dipoles[1].idip);
-        CHECK(roundtrip.dipoles[1].dipole == Catch::Approx(original.dipoles[1].dipole));
-        CHECK(roundtrip.dipoles[2].idip == original.dipoles[2].idip);
-        CHECK(roundtrip.dipoles[2].dipole == Catch::Approx(original.dipoles[2].dipole));
+    if (roundtrip->dipoles.size() >= 3) {
+        CHECK(roundtrip->dipoles[0].idip == original->dipoles[0].idip);
+        CHECK(roundtrip->dipoles[0].dipole == Catch::Approx(original->dipoles[0].dipole));
+        CHECK(roundtrip->dipoles[1].idip == original->dipoles[1].idip);
+        CHECK(roundtrip->dipoles[1].dipole == Catch::Approx(original->dipoles[1].dipole));
+        CHECK(roundtrip->dipoles[2].idip == original->dipoles[2].idip);
+        CHECK(roundtrip->dipoles[2].dipole == Catch::Approx(original->dipoles[2].dipole));
     }
 }

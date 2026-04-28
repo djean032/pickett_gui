@@ -16,14 +16,12 @@ SpeHeader::SpeHeader()
   std::memset(scansp, 0, sizeof(scansp));
 }
 
-SpeParseResult SpeParser::parse_file(const std::string &filepath) {
-  SpeParseResult result;
+SpeParseExpected SpeParser::parse_file(const std::string &filepath) {
 
   std::ifstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
-    result.errors.emplace_back(0, "Failed to open file: " + filepath);
-    result.success = false;
-    return result;
+    return std::unexpected(
+        SpeParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   // Read entire file
@@ -33,30 +31,27 @@ SpeParseResult SpeParser::parse_file(const std::string &filepath) {
 
   std::vector<uint8_t> buffer(file_size);
   if (!file.read(reinterpret_cast<char *>(buffer.data()), file_size)) {
-    result.errors.emplace_back(0, "Failed to read file: " + filepath);
-    result.success = false;
-    return result;
+    return std::unexpected(
+        SpeParseErrors{{0, "Failed to read file: " + filepath}});
   }
   file.close();
 
   return parse_buffer(buffer);
 }
 
-SpeParseResult SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
+SpeParseExpected SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
   SpeParseResult result;
 
   // Minimum file size: header (170) + at least 1 data point (4) + footer (26) =
   // 200
   if (buffer.size() < 200) {
-    result.errors.emplace_back(0, "File too small (minimum 200 bytes)");
-    result.success = false;
-    return result;
+    return std::unexpected(
+        SpeParseErrors{{0, "File too small (minimum 200 bytes)"}});
   }
 
   // Parse header (170 bytes)
   if (!parse_header(buffer, result.header, result.errors)) {
-    result.success = false;
-    return result;
+    return std::unexpected(result.errors);
   }
 
   // Validate header
@@ -66,14 +61,12 @@ SpeParseResult SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
 
   // Parse data section
   if (!parse_data(buffer, result.npts, result.intensities, result.errors)) {
-    result.success = false;
-    return result;
+    return std::unexpected(result.errors);
   }
 
   // Parse footer
   if (!parse_footer(buffer, result.footer, result.errors)) {
-    result.success = false;
-    return result;
+    return std::unexpected(result.errors);
   }
 
   return result;

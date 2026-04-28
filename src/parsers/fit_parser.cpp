@@ -78,14 +78,12 @@ static bool extract_double_after_pattern(const std::string &line,
   }
 }
 
-FitParseResult FitParser::parse_file(const std::string &filepath) {
+FitParseExpected FitParser::parse_file(const std::string &filepath) {
   FitParseResult result;
   std::ifstream file(filepath);
 
   if (!file.is_open()) {
-    result.errors.emplace_back(0, "Failed to open file: " + filepath);
-    result.success = false;
-    return result;
+    return std::unexpected(FitParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   // Read all lines into memory
@@ -99,9 +97,7 @@ FitParseResult FitParser::parse_file(const std::string &filepath) {
   file.close();
 
   if (all_lines.empty()) {
-    result.errors.emplace_back(0, "Empty file");
-    result.success = false;
-    return result;
+    return std::unexpected(FitParseErrors{{0, "Empty file"}});
   }
 
   // Phase 1: Parse header (first 4 lines)
@@ -146,9 +142,7 @@ FitParseResult FitParser::parse_file(const std::string &filepath) {
   }
 
   if (last_exp_freq_line == -1) {
-    result.errors.emplace_back(0, "No EXP.FREQ. section found");
-    result.success = false;
-    return result;
+    return std::unexpected(FitParseErrors{{0, "No EXP.FREQ. section found"}});
   }
 
   // Phase 4: Parse line records from the final EXP.FREQ. section

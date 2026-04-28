@@ -50,55 +50,58 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
     const auto result = service.loadSpe(
         testDataPath("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
 
-    REQUIRE(result.success);
-    CHECK(!result.points.isEmpty());
-    CHECK(result.errors.isEmpty());
-    CHECK(result.requestId == 0);
+    REQUIRE(result.has_value());
+    CHECK(!result->points.isEmpty());
+    CHECK(result->errors.isEmpty());
+    CHECK(result->requestId == 0);
   }
 
   SECTION("CAT success") {
     const auto result = service.loadCat(testDataPath("cyanomethcycloprop.cat"));
 
-    REQUIRE(result.success);
-    CHECK(!result.lines.isEmpty());
-    CHECK(result.errors.isEmpty());
-    CHECK(result.requestId == 0);
+    REQUIRE(result.has_value());
+    CHECK(!result->lines.isEmpty());
+    CHECK(result->errors.isEmpty());
+    CHECK(result->requestId == 0);
   }
 
   SECTION("LIN success") {
     const auto result = service.loadLin(testDataPath("cyanomethcycloprop.lin"));
 
-    REQUIRE(result.success);
-    CHECK(!result.lines.isEmpty());
-    CHECK(result.errors.isEmpty());
-    CHECK(result.requestId == 0);
+    REQUIRE(result.has_value());
+    CHECK(!result->lines.isEmpty());
+    CHECK(result->errors.isEmpty());
+    CHECK(result->requestId == 0);
   }
 
   SECTION("SPE failure") {
     const auto result = service.loadSpe("nonexistent_file.spe");
 
-    CHECK(!result.success);
-    REQUIRE(!result.errors.isEmpty());
-    CHECK(result.errors[0].code == ParserErrorCode::FileNotFound);
-    CHECK(result.errors[0].domain == ParserDomain::Common);
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().errors.isEmpty());
+    CHECK(result.error().errors[0].code == ParserErrorCode::FileNotFound);
+    CHECK(result.error().errors[0].domain == ParserDomain::Common);
+    CHECK(result.error().domain == ParserDomain::Common);
   }
 
   SECTION("CAT failure") {
     const auto result = service.loadCat("nonexistent_file.cat");
 
-    CHECK(!result.success);
-    REQUIRE(!result.errors.isEmpty());
-    CHECK(result.errors[0].code == ParserErrorCode::FileNotFound);
-    CHECK(result.errors[0].domain == ParserDomain::Common);
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().errors.isEmpty());
+    CHECK(result.error().errors[0].code == ParserErrorCode::FileNotFound);
+    CHECK(result.error().errors[0].domain == ParserDomain::Common);
+    CHECK(result.error().domain == ParserDomain::Common);
   }
 
   SECTION("LIN failure") {
     const auto result = service.loadLin("nonexistent_file.lin");
 
-    CHECK(!result.success);
-    REQUIRE(!result.errors.isEmpty());
-    CHECK(result.errors[0].code == ParserErrorCode::FileNotFound);
-    CHECK(result.errors[0].domain == ParserDomain::Common);
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().errors.isEmpty());
+    CHECK(result.error().errors[0].code == ParserErrorCode::FileNotFound);
+    CHECK(result.error().errors[0].domain == ParserDomain::Common);
+    CHECK(result.error().domain == ParserDomain::Common);
   }
 
   SECTION("SPE invalid format maps to typed domain error") {
@@ -110,10 +113,11 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
 
     const auto result = service.loadSpe(invalidPath);
 
-    CHECK(!result.success);
-    REQUIRE(!result.errors.isEmpty());
-    CHECK(result.errors[0].code == ParserErrorCode::InvalidFormat);
-    CHECK(result.errors[0].domain == ParserDomain::Spe);
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().errors.isEmpty());
+    CHECK(result.error().errors[0].code == ParserErrorCode::InvalidFormat);
+    CHECK(result.error().errors[0].domain == ParserDomain::Spe);
+    CHECK(result.error().domain == ParserDomain::Spe);
   }
 }
 
@@ -135,8 +139,8 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 120000));
     CHECK(received.requestId == requestId);
-    CHECK(received.success);
     CHECK(!received.points.isEmpty());
+    CHECK(received.errors.isEmpty());
   }
 
   SECTION("CAT success") {
@@ -152,8 +156,8 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 10000));
     CHECK(received.requestId == requestId);
-    CHECK(received.success);
     CHECK(!received.lines.isEmpty());
+    CHECK(received.errors.isEmpty());
   }
 
   SECTION("LIN success") {
@@ -169,8 +173,8 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 10000));
     CHECK(received.requestId == requestId);
-    CHECK(received.success);
     CHECK(!received.lines.isEmpty());
+    CHECK(received.errors.isEmpty());
   }
 
   SECTION("SPE failure") {
@@ -186,10 +190,11 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
-    CHECK(!received.success);
+    CHECK(received.points.isEmpty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
     CHECK(received.errors[0].domain == ParserDomain::Common);
+    CHECK(received.sourcePath == QStringLiteral("nonexistent_file.spe"));
   }
 
   SECTION("CAT failure") {
@@ -205,10 +210,11 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
-    CHECK(!received.success);
+    CHECK(received.lines.isEmpty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
     CHECK(received.errors[0].domain == ParserDomain::Common);
+    CHECK(received.sourcePath == QStringLiteral("nonexistent_file.cat"));
   }
 
   SECTION("LIN failure") {
@@ -224,10 +230,11 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
-    CHECK(!received.success);
+    CHECK(received.lines.isEmpty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
     CHECK(received.errors[0].domain == ParserDomain::Common);
+    CHECK(received.sourcePath == QStringLiteral("nonexistent_file.lin"));
   }
 
   SECTION("SPE invalid format async maps to typed domain error") {
@@ -249,7 +256,7 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
 
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
-    CHECK(!received.success);
+    CHECK(received.points.isEmpty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::InvalidFormat);
     CHECK(received.errors[0].domain == ParserDomain::Spe);

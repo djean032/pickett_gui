@@ -1,6 +1,7 @@
 #ifndef LIN_PARSER_H
 #define LIN_PARSER_H
 
+#include <expected>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,15 +23,15 @@ struct LinRecord {
 struct LinParseResult {
   std::vector<LinRecord> records;
   std::vector<std::pair<int, std::string>> errors; // line_number, message
-  bool success; // false if critical error (file not found)
-
-  LinParseResult() : success(true) {}
 };
+
+using LinParseErrors = std::vector<std::pair<int, std::string>>;
+using LinParseExpected = std::expected<LinParseResult, LinParseErrors>;
 
 class LinParser {
 public:
   // Parse .lin file, returns result with records and any errors
-  static LinParseResult parse_file(const std::string &filepath);
+  static LinParseExpected parse_file(const std::string &filepath);
 
   // Write .lin file from parsed data
   // Returns true on success, false on failure with error message

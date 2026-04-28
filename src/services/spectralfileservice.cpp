@@ -231,69 +231,153 @@ SpectralFileService::SpectralFileService(QObject *parent) : QObject(parent) {
       "SpectralFileService::LinResult");
 }
 
+namespace {
+
+ServiceFailure toFailure(const QVector<ServiceError> &errors, Domain domain,
+                         const QString &sourcePath) {
+  ServiceFailure failure;
+  failure.errors = errors;
+  failure.domain = domain;
+  failure.sourcePath = sourcePath;
+  return failure;
+}
+
 SpectralFileService::SpectrumResult
+toLegacySpectrumResult(const SpectralFileService::SpectrumLoadExpected &expected) {
+  SpectralFileService::SpectrumResult result;
+  if (expected.has_value()) {
+    result = expected.value();
+    return result;
+  }
+
+  const ServiceFailure &failure = expected.error();
+  result.sourcePath = failure.sourcePath;
+  result.errors = failure.errors;
+  return result;
+}
+
+SpectralFileService::CatalogResult
+toLegacyCatalogResult(const SpectralFileService::CatalogLoadExpected &expected) {
+  SpectralFileService::CatalogResult result;
+  if (expected.has_value()) {
+    result = expected.value();
+    return result;
+  }
+
+  const ServiceFailure &failure = expected.error();
+  result.sourcePath = failure.sourcePath;
+  result.errors = failure.errors;
+  return result;
+}
+
+SpectralFileService::LinResult
+toLegacyLinResult(const SpectralFileService::LinLoadExpected &expected) {
+  SpectralFileService::LinResult result;
+  if (expected.has_value()) {
+    result = expected.value();
+    return result;
+  }
+
+  const ServiceFailure &failure = expected.error();
+  result.sourcePath = failure.sourcePath;
+  result.errors = failure.errors;
+  return result;
+}
+
+} // namespace
+
+SpectralFileService::SpectrumLoadExpected
 SpectralFileService::loadSpe(const QString &filePath) const {
   SpectrumResult result;
   result.sourcePath = normalizePath(filePath);
 
   if (!validateReadablePath(result.sourcePath, result.errors)) {
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Common,
+                                     result.sourcePath));
   }
 
   const auto parsed =
       pickett::SpeParser::parse_file(result.sourcePath.toStdString());
-  appendParserErrors(parsed.errors, result.errors, Domain::Spe,
-                     result.sourcePath, parsed.success);
+  if (!parsed.has_value()) {
+    appendParserErrors(parsed.error(), result.errors, Domain::Spe,
+                       result.sourcePath, false);
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(
+          makeError(ErrorCode::ParseFailed, "SPE parsing failed", Domain::Spe,
+                    "spe", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Spe,
+                                     result.sourcePath));
+  }
 
-  if (!parsed.success || parsed.npts <= 0 || parsed.intensities.empty()) {
+  const auto &parsedValue = parsed.value();
+  appendParserErrors(parsedValue.errors, result.errors, Domain::Spe,
+                     result.sourcePath, true);
+
+  if (parsedValue.npts <= 0 || parsedValue.intensities.empty()) {
     if (result.errors.isEmpty()) {
       result.errors.push_back(
           makeError(ErrorCode::EmptyData, "No spectral data points found",
                     Domain::Spe, "spe", result.sourcePath, 0, true));
     }
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Spe,
+                                     result.sourcePath));
   }
 
-  result.points.reserve(parsed.npts);
-  for (int i = 0; i < parsed.npts; ++i) {
+  result.points.reserve(parsedValue.npts);
+  for (int i = 0; i < parsedValue.npts; ++i) {
     SpectrumPoint point;
-    point.frequencyMHz = parsed.footer.fstart + i * parsed.footer.fincr;
-    point.intensity = static_cast<double>(parsed.intensities[i]);
+    point.frequencyMHz = parsedValue.footer.fstart + i * parsedValue.footer.fincr;
+    point.intensity = static_cast<double>(parsedValue.intensities[i]);
     result.points.push_back(point);
   }
 
-  result.fStartMHz = parsed.footer.fstart;
-  result.fEndMHz = parsed.footer.fend;
-  result.fIncrMHz = parsed.footer.fincr;
-  result.success = true;
+  result.fStartMHz = parsedValue.footer.fstart;
+  result.fEndMHz = parsedValue.footer.fend;
+  result.fIncrMHz = parsedValue.footer.fincr;
   return result;
 }
 
-SpectralFileService::CatalogResult
+SpectralFileService::CatalogLoadExpected
 SpectralFileService::loadCat(const QString &filePath) const {
   CatalogResult result;
   result.sourcePath = normalizePath(filePath);
 
   if (!validateReadablePath(result.sourcePath, result.errors)) {
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Common,
+                                     result.sourcePath));
   }
 
   const auto parsed =
       pickett::CatParser::parse_file(result.sourcePath.toStdString());
-  appendParserErrors(parsed.errors, result.errors, Domain::Cat,
-                     result.sourcePath, parsed.success);
+  if (!parsed.has_value()) {
+    appendParserErrors(parsed.error(), result.errors, Domain::Cat,
+                       result.sourcePath, false);
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(makeError(ErrorCode::ParseFailed,
+                                        "CAT parsing failed", Domain::Cat,
+                                        "cat", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Cat,
+                                     result.sourcePath));
+  }
 
-  if (!parsed.success || parsed.records.empty()) {
+  const auto &parsedValue = parsed.value();
+  appendParserErrors(parsedValue.errors, result.errors, Domain::Cat,
+                     result.sourcePath, true);
+
+  if (parsedValue.records.empty()) {
     if (result.errors.isEmpty()) {
       result.errors.push_back(
           makeError(ErrorCode::EmptyData, "No catalog lines found", Domain::Cat,
                     "cat", result.sourcePath, 0, true));
     }
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Cat,
+                                     result.sourcePath));
   }
 
-  result.lines.reserve(static_cast<int>(parsed.records.size()));
-  for (const auto &record : parsed.records) {
+  result.lines.reserve(static_cast<int>(parsedValue.records.size()));
+  for (const auto &record : parsedValue.records) {
     CatalogLine line;
     line.freq = record.freq;
     line.err = record.err;
@@ -307,35 +391,49 @@ SpectralFileService::loadCat(const QString &filePath) const {
     result.lines.push_back(line);
   }
 
-  result.success = true;
   return result;
 }
 
-SpectralFileService::LinResult
+SpectralFileService::LinLoadExpected
 SpectralFileService::loadLin(const QString &filePath) const {
   LinResult result;
   result.sourcePath = normalizePath(filePath);
 
   if (!validateReadablePath(result.sourcePath, result.errors)) {
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Common,
+                                     result.sourcePath));
   }
 
   const auto parsed =
       pickett::LinParser::parse_file(result.sourcePath.toStdString());
-  appendParserErrors(parsed.errors, result.errors, Domain::Lin,
-                     result.sourcePath, parsed.success);
+  if (!parsed.has_value()) {
+    appendParserErrors(parsed.error(), result.errors, Domain::Lin,
+                       result.sourcePath, false);
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(makeError(ErrorCode::ParseFailed,
+                                        "LIN parsing failed", Domain::Lin,
+                                        "lin", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Lin,
+                                     result.sourcePath));
+  }
 
-  if (!parsed.success || parsed.records.empty()) {
+  const auto &parsedValue = parsed.value();
+  appendParserErrors(parsedValue.errors, result.errors, Domain::Lin,
+                     result.sourcePath, true);
+
+  if (parsedValue.records.empty()) {
     if (result.errors.isEmpty()) {
       result.errors.push_back(
           makeError(ErrorCode::EmptyData, "No LIN entries found", Domain::Lin,
                     "lin", result.sourcePath, 0, true));
     }
-    return result;
+    return std::unexpected(toFailure(result.errors, Domain::Lin,
+                                     result.sourcePath));
   }
 
-  result.lines.reserve(static_cast<int>(parsed.records.size()));
-  for (const auto &record : parsed.records) {
+  result.lines.reserve(static_cast<int>(parsedValue.records.size()));
+  for (const auto &record : parsedValue.records) {
     LinLine line;
     line.qn = toQnVector(record.qn);
     line.freq = record.freq;
@@ -344,7 +442,6 @@ SpectralFileService::loadLin(const QString &filePath) const {
     result.lines.push_back(line);
   }
 
-  result.success = true;
   return result;
 }
 
@@ -361,7 +458,7 @@ quint64 SpectralFileService::loadSpeAsync(const QString &filePath) {
           });
 
   watcher->setFuture(QtConcurrent::run([this, filePath]() {
-    return loadSpe(filePath);
+    return toLegacySpectrumResult(loadSpe(filePath));
   }));
 
   return requestId;
@@ -380,7 +477,7 @@ quint64 SpectralFileService::loadCatAsync(const QString &filePath) {
           });
 
   watcher->setFuture(QtConcurrent::run([this, filePath]() {
-    return loadCat(filePath);
+    return toLegacyCatalogResult(loadCat(filePath));
   }));
 
   return requestId;
@@ -399,7 +496,7 @@ quint64 SpectralFileService::loadLinAsync(const QString &filePath) {
           });
 
   watcher->setFuture(QtConcurrent::run([this, filePath]() {
-    return loadLin(filePath);
+    return toLegacyLinResult(loadLin(filePath));
   }));
 
   return requestId;

@@ -12,13 +12,13 @@ TEST_CASE("CatParser decodes alphabetic QN values correctly", "[cat_parser]") {
     // A0 should decode to 100
     {
         auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
-        REQUIRE(result.success);
-        REQUIRE(!result.records.empty());
+        REQUIRE(result.has_value());
+        REQUIRE(!result->records.empty());
         
         // Find a record with A* in the QN fields
         // Line 46073 from earlier grep: 46073.2872  9.6899 -7.9421 3 1066.8804201 ... A0...
         bool found_alpha = false;
-        for (const auto& record : result.records) {
+        for (const auto& record : result->records) {
             for (int i = 0; i < 12; ++i) {
                 if (record.qn[i] >= 100) {
                     found_alpha = true;
@@ -36,11 +36,11 @@ TEST_CASE("CatParser decodes alphabetic QN values correctly", "[cat_parser]") {
 TEST_CASE("CatParser QN decoding algorithm", "[cat_parser]") {
     // Test the internal decode logic by parsing a file and checking specific values
     auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
-    REQUIRE(result.success);
+    REQUIRE(result.has_value());
     
     // First record: QN should have reasonable values
-    if (!result.records.empty()) {
-        const auto& first = result.records[0];
+    if (!result->records.empty()) {
+        const auto& first = result->records[0];
         INFO("First record QN values:");
         for (int i = 0; i < 12; ++i) {
             INFO("  qn[" << i << "] = " << first.qn[i]);
@@ -54,17 +54,17 @@ TEST_CASE("CatParser QN decoding algorithm", "[cat_parser]") {
 
 TEST_CASE("CatParser decodes QNFMT correctly", "[cat_parser]") {
     auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
-    REQUIRE(result.success);
+    REQUIRE(result.has_value());
     
-    if (!result.records.empty()) {
-        int qnfmt = result.records[0].qnfmt;
+    if (!result->records.empty()) {
+        int qnfmt = result->records[0].qnfmt;
         INFO("Detected QNFMT: " << qnfmt);
         
         auto format = CatParser::decode_qnfmt(qnfmt);
         INFO("Q=" << format.q << ", H=" << format.h << ", NQN=" << format.nqn);
         
         // Check all records have same QNFMT
-        for (const auto& record : result.records) {
+        for (const auto& record : result->records) {
             CHECK(record.qnfmt == qnfmt);
         }
     }
@@ -92,43 +92,42 @@ TEST_CASE("CatParser returns empty labels for unknown QFMT", "[cat_parser]") {
 
 TEST_CASE("CatParser handles file not found", "[cat_parser]") {
     auto result = CatParser::parse_file("nonexistent_file.cat");
-    CHECK(!result.success);
-    CHECK(result.records.empty());
-    REQUIRE(!result.errors.empty());
-    CHECK(result.errors[0].first == 0);  // Line 0 = file-level error
+    CHECK(!result.has_value());
+    REQUIRE(!result.error().empty());
+    CHECK(result.error()[0].first == 0);  // Line 0 = file-level error
 }
 
 TEST_CASE("CatParser parses actual test file with many records", "[cat_parser]") {
     auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     
-    INFO("Success: " << result.success);
-    INFO("Records parsed: " << result.records.size());
-    INFO("Errors count: " << result.errors.size());
+    INFO("Success: " << result.has_value());
+    INFO("Records parsed: " << (result.has_value() ? result->records.size() : 0));
+    INFO("Errors count: " << (result.has_value() ? result->errors.size() : result.error().size()));
     
-    CHECK(result.success);
-    CHECK(!result.records.empty());
-    CHECK(result.errors.empty());  // No line-level errors expected
+    CHECK(result.has_value());
+    CHECK(!result->records.empty());
+    CHECK(result->errors.empty());  // No line-level errors expected
     
-    if (!result.records.empty()) {
+    if (!result->records.empty()) {
         // Check first record has all expected fields
-        const auto& first = result.records[0];
+        const auto& first = result->records[0];
         CHECK(first.freq > 0);
         CHECK(first.qnfmt > 0);
         
         // Check last record
-        const auto& last = result.records.back();
+        const auto& last = result->records.back();
         CHECK(last.freq > 0);
         
-        INFO("File contains " << result.records.size() << " catalog records");
+        INFO("File contains " << result->records.size() << " catalog records");
     }
 }
 
 TEST_CASE("CatParser verifies fixed-width field parsing", "[cat_parser]") {
     auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
-    REQUIRE(result.success);
+    REQUIRE(result.has_value());
     
-    if (!result.records.empty()) {
-        const auto& rec = result.records[0];
+    if (!result->records.empty()) {
+        const auto& rec = result->records[0];
         
         // FREQ should be around 6921.2891 (from first line)
         CHECK(rec.freq > 4800.0);
@@ -159,12 +158,12 @@ TEST_CASE("CatParser detects inconsistent QFMT as error", "[cat_parser]") {
     // This would require manually crafting a test file
     // For now, just verify the mechanism works by checking all records match first
     auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
-    REQUIRE(result.success);
+    REQUIRE(result.has_value());
     
-    if (result.records.size() > 1) {
-        int first_qnfmt = result.records[0].qnfmt;
-        for (size_t i = 1; i < result.records.size(); ++i) {
-            CHECK(result.records[i].qnfmt == first_qnfmt);
+    if (result->records.size() > 1) {
+        int first_qnfmt = result->records[0].qnfmt;
+        for (size_t i = 1; i < result->records.size(); ++i) {
+            CHECK(result->records[i].qnfmt == first_qnfmt);
         }
     }
 }

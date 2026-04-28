@@ -109,14 +109,12 @@ std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {
   return result;
 }
 
-CatParseResult CatParser::parse_file(const std::string &filepath) {
+CatParseExpected CatParser::parse_file(const std::string &filepath) {
   CatParseResult result;
   std::ifstream file(filepath);
 
   if (!file.is_open()) {
-    result.success = false;
-    result.errors.push_back({0, "Failed to open file: " + filepath});
-    return result;
+    return std::unexpected(CatParseErrors{{0, "Failed to open file: " + filepath}});
   }
 
   std::string line;
@@ -218,10 +216,8 @@ CatParseResult CatParser::parse_file(const std::string &filepath) {
         auto labels = get_qn_labels(record.qnfmt);
         if (labels.empty()) {
           // Unknown QFMT - this is an error on first line
-          result.success = false;
-          result.errors.push_back(
-              {line_num, "Unknown QFMT code: " + std::to_string(record.qnfmt)});
-          return result;
+          return std::unexpected(CatParseErrors{
+              {line_num, "Unknown QFMT code: " + std::to_string(record.qnfmt)}});
         }
         has_valid_qnfmt = true;
       } else if (record.qnfmt != detected_qnfmt) {
@@ -258,9 +254,8 @@ CatParseResult CatParser::parse_file(const std::string &filepath) {
 
   // Check if we have any valid QFMT
   if (!has_valid_qnfmt && result.records.empty()) {
-    result.success = false;
-    result.errors.push_back(
-        {0, "No valid records found (all lines had errors or unknown QFMT)"});
+    return std::unexpected(CatParseErrors{
+        {0, "No valid records found (all lines had errors or unknown QFMT)"}});
   }
 
   return result;
