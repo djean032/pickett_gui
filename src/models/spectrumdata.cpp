@@ -1,46 +1,71 @@
 #include "spectrumdata.h"
-#include "parsers/spe_parser.h"
-#include <QUrl>
 #include <algorithm>
-#include <iostream>
 
 SpectrumData::SpectrumData(QObject *parent) : QObject(parent) {}
 
 void SpectrumData::loadFile(const QString &filePath) {
-  // Convert file URL to local path if needed
-  QString localPath = filePath;
-  QUrl url(filePath);
-  if (url.isLocalFile()) {
-    localPath = url.toLocalFile();
+  if (!m_fileService) {
+    return;
   }
 
-  std::cout << "Loading: " << localPath.toStdString() << std::endl;
+  m_pendingFileName = filePath;
+  m_pendingRequestId = m_fileService->loadSpeAsync(filePath);
+}
 
-  pickett::SpeParseResult result =
-      pickett::SpeParser::parse_file(localPath.toStdString());
-  if (!result.success || result.npts <= 0) {
-    std::cerr << "Failed to parse file or no data points" << std::endl;
+SpectralFileService *SpectrumData::fileService() const { return m_fileService; }
+
+void SpectrumData::setFileService(SpectralFileService *service) {
+  if (m_fileService == service) {
+    return;
+  }
+
+  if (m_fileService) {
+    disconnect(m_fileService, &SpectralFileService::speLoaded, this,
+               &SpectrumData::onSpeLoaded);
+  }
+
+  m_fileService = service;
+
+  if (m_fileService) {
+    connect(m_fileService, &SpectralFileService::speLoaded, this,
+            &SpectrumData::onSpeLoaded);
+  }
+
+  emit fileServiceChanged();
+}
+
+void SpectrumData::onSpeLoaded(
+    const SpectralFileService::SpectrumResult &result) {
+  if (result.requestId != m_pendingRequestId) {
+    return;
+  }
+
+  if (!result.success || result.points.isEmpty()) {
     return;
   }
 
   std::vector<double> freqs;
   std::vector<double> intensities;
-  freqs.resize(result.npts);
-  intensities.resize(result.npts);
+  freqs.reserve(static_cast<size_t>(result.points.size()));
+  intensities.reserve(static_cast<size_t>(result.points.size()));
 
-  for (int i = 0; i < result.npts; ++i) {
-    freqs[i] = result.footer.fstart + i * result.footer.fincr;
-    intensities[i] = static_cast<double>(result.intensities[i]);
+  for (const auto &point : result.points) {
+    freqs.push_back(point.frequencyMHz);
+    intensities.push_back(point.intensity);
   }
 
   decimate(freqs, intensities);
+
+  if (m_xData.empty() || m_yData.empty()) {
+    return;
+  }
 
   m_xMin = *std::min_element(m_xData.begin(), m_xData.end());
   m_xMax = *std::max_element(m_xData.begin(), m_xData.end());
   m_yMin = *std::min_element(m_yData.begin(), m_yData.end());
   m_yMax = *std::max_element(m_yData.begin(), m_yData.end());
 
-  m_fileName = filePath;
+  m_fileName = m_pendingFileName;
   emit dataChanged();
   emit fileNameChanged();
 }

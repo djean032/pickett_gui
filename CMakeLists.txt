@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Qt6 - Quick module for QML UI
-find_package(Qt6 REQUIRED COMPONENTS Quick)
+find_package(Qt6 REQUIRED COMPONENTS Quick Concurrent)
 
 # Set Qt policies for consistent QML module behavior across Qt versions
 qt_policy(SET QTP0001 NEW)
@@ -51,6 +51,8 @@ qt_add_qml_module(pickett-gui
         src/models/viewportmodel.h
         src/models/catalogdata.cpp
         src/models/catalogdata.h
+        src/services/spectralfileservice.cpp
+        src/services/spectralfileservice.h
         src/plot/spectrumplotitem.cpp
         src/plot/spectrumplotitem.h
         src/plot/catalogplotitem.cpp
@@ -60,6 +62,7 @@ qt_add_qml_module(pickett-gui
 target_link_libraries(pickett-gui PRIVATE
     parsers
     Qt6::Quick
+    Qt6::Concurrent
 )
 
 set_target_properties(pickett-gui PROPERTIES
@@ -99,9 +102,17 @@ if(PICKETT_BUILD_TESTS)
         tests/test_int_parser.cpp
         tests/test_fit_parser.cpp
         tests/test_spe_parser.cpp
+        tests/test_spectral_file_service.cpp
+        src/services/spectralfileservice.cpp
+        src/services/spectralfileservice.h
     )
     
-    target_link_libraries(test_parsers PRIVATE parsers Catch2::Catch2WithMain)
+    target_link_libraries(test_parsers PRIVATE
+        parsers
+        Catch2::Catch2WithMain
+        Qt6::Core
+        Qt6::Concurrent
+    )
     target_compile_definitions(test_parsers PRIVATE TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test_data")
     
     # Automatic test registration with CTest

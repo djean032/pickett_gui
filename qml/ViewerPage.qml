@@ -10,8 +10,25 @@ Page {
     signal back()
     focus: true
 
+    SpectralFileService {
+        id: spectralFileService
+    }
+
+    onDataModelChanged: {
+        if (dataModel) {
+            dataModel.fileService = spectralFileService
+        }
+    }
+
+    Component.onCompleted: {
+        if (dataModel) {
+            dataModel.fileService = spectralFileService
+        }
+    }
+
     CatalogData {
         id: catalogData
+        fileService: spectralFileService
     }
 
     ColumnLayout {

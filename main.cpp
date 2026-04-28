@@ -1,11 +1,12 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include "src/models/catalogdata.h"
 #include "src/models/spectrumdata.h"
 #include "src/models/viewportmodel.h"
-#include "src/models/catalogdata.h"
 #include "src/plot/spectrumplotitem.h"
 #include "src/plot/catalogplotitem.h"
+#include "src/services/spectralfileservice.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<CatalogData>("Pickett", 1, 0, "CatalogData");
     qmlRegisterType<SpectrumPlotItem>("Pickett", 1, 0, "SpectrumPlotItem");
     qmlRegisterType<CatalogPlotItem>("Pickett", 1, 0, "CatalogPlotItem");
+    qmlRegisterType<SpectralFileService>("Pickett", 1, 0,
+                                         "SpectralFileService");
 
     QQmlApplicationEngine engine;
 

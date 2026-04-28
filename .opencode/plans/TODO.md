@@ -3,13 +3,13 @@
 ## HIGH PRIORITY
 
 ### Service Layer
-- [ ] Implement SpectralFileService to encapsulate file operations and parsing
+- [x] Implement SpectralFileService to encapsulate file operations and parsing
   - Provides synchronous and asynchronous parsing APIs
   - Centralizes error handling and reporting
   - Enables easy mocking for unit tests
 
 ### Error Handling
-- [ ] Define domain-specific error types
+- [x] Define domain-specific error types
   - ParserError enum (FileNotFound, InvalidHeader, etc.)
   - Rich error information with context
 - [ ] Integrate error handling with service layer
@@ -74,4 +74,3 @@
   - Example: "parse then serialize should preserve data"
   - Libraries: rapidcheck or std::experimental::generate
   - Lower priority due to learning curve and existing robust test suite
-
