@@ -157,9 +157,33 @@ ErrorCode mapLinError(const QString &message) {
   return ErrorCode::ParseFailed;
 }
 
+bool isFatalErrorCode(ErrorCode code, Domain domain, bool parserSuccess) {
+  if (!parserSuccess) {
+    return true;
+  }
+
+  if (domain == Domain::Spe) {
+    if (code == ErrorCode::InvalidHeader || code == ErrorCode::InvalidFooter ||
+        code == ErrorCode::ParseFailed) {
+      return false;
+    }
+  }
+
+  if (domain == Domain::Cat || domain == Domain::Lin) {
+    if (code == ErrorCode::InvalidRecord ||
+        code == ErrorCode::InvalidQuantumNumber ||
+        code == ErrorCode::InconsistentFormat ||
+        code == ErrorCode::ParseFailed) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 void appendParserErrors(const std::vector<std::pair<int, std::string>> &source,
-                        QVector<ServiceError> &target,
-                        Domain domain, const QString &sourcePath) {
+                        QVector<ServiceError> &target, Domain domain,
+                        const QString &sourcePath, bool parserSuccess) {
   for (const auto &entry : source) {
     const QString message = QString::fromStdString(entry.second);
     ErrorCode code = ErrorCode::ParseFailed;
@@ -175,7 +199,8 @@ void appendParserErrors(const std::vector<std::pair<int, std::string>> &source,
       field = "lin";
     }
     target.push_back(
-        makeError(code, message, domain, field, sourcePath, entry.first, true));
+        makeError(code, message, domain, field, sourcePath, entry.first,
+                  isFatalErrorCode(code, domain, parserSuccess)));
   }
 }
 
@@ -218,7 +243,7 @@ SpectralFileService::loadSpe(const QString &filePath) const {
   const auto parsed =
       pickett::SpeParser::parse_file(result.sourcePath.toStdString());
   appendParserErrors(parsed.errors, result.errors, Domain::Spe,
-                     result.sourcePath);
+                     result.sourcePath, parsed.success);
 
   if (!parsed.success || parsed.npts <= 0 || parsed.intensities.empty()) {
     if (result.errors.isEmpty()) {
@@ -256,7 +281,7 @@ SpectralFileService::loadCat(const QString &filePath) const {
   const auto parsed =
       pickett::CatParser::parse_file(result.sourcePath.toStdString());
   appendParserErrors(parsed.errors, result.errors, Domain::Cat,
-                     result.sourcePath);
+                     result.sourcePath, parsed.success);
 
   if (!parsed.success || parsed.records.empty()) {
     if (result.errors.isEmpty()) {
@@ -298,7 +323,7 @@ SpectralFileService::loadLin(const QString &filePath) const {
   const auto parsed =
       pickett::LinParser::parse_file(result.sourcePath.toStdString());
   appendParserErrors(parsed.errors, result.errors, Domain::Lin,
-                     result.sourcePath);
+                     result.sourcePath, parsed.success);
 
   if (!parsed.success || parsed.records.empty()) {
     if (result.errors.isEmpty()) {

@@ -2,14 +2,57 @@
 #include <algorithm>
 #include <cmath>
 
+namespace {
+
+QString firstErrorMessage(const QVector<ParserError> &errors,
+                         const QString &fallback) {
+  if (errors.isEmpty()) {
+    return fallback;
+  }
+  return errors[0].message;
+}
+
+bool hasFatalError(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (error.isFatal) {
+      return true;
+    }
+  }
+  return false;
+}
+
+QString firstFatalMessage(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (error.isFatal) {
+      return error.message;
+    }
+  }
+  return QString();
+}
+
+QString firstWarningMessage(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (!error.isFatal) {
+      return error.message;
+    }
+  }
+  return QString();
+}
+
+} // namespace
+
 CatalogData::CatalogData(QObject *parent) : QObject(parent) {}
 
 void CatalogData::loadFile(const QString &filePath) {
   if (!m_fileService) {
+    setErrorMessage("File service is not configured");
     return;
   }
 
   m_pendingFileName = filePath;
+  clearError();
+  clearWarning();
+  setLoading(true);
   m_pendingRequestId = m_fileService->loadCatAsync(filePath);
 }
 
@@ -39,8 +82,29 @@ void CatalogData::onCatLoaded(
     return;
   }
 
+  setLoading(false);
+
   if (!result.success || result.lines.isEmpty()) {
+    clearWarning();
+    if (hasFatalError(result.errors) || result.errors.isEmpty()) {
+      const QString fatalMessage = firstFatalMessage(result.errors);
+      setErrorMessage(!fatalMessage.isEmpty()
+                          ? fatalMessage
+                          : firstErrorMessage(result.errors,
+                                              "Failed to load catalog file"));
+    } else {
+      clearError();
+      setWarningMessage(firstWarningMessage(result.errors));
+    }
     return;
+  }
+
+  clearError();
+  const QString warning = firstWarningMessage(result.errors);
+  if (!warning.isEmpty()) {
+    setWarningMessage(warning);
+  } else {
+    clearWarning();
   }
 
   m_records.clear();
@@ -98,4 +162,50 @@ void CatalogData::onCatLoaded(
   m_fileName = m_pendingFileName;
   emit dataChanged();
   emit fileNameChanged();
+}
+
+void CatalogData::setLoading(bool loading) {
+  if (m_isLoading == loading) {
+    return;
+  }
+  m_isLoading = loading;
+  emit loadingChanged();
+}
+
+void CatalogData::clearError() {
+  if (!m_hasError && m_errorMessage.isEmpty()) {
+    return;
+  }
+  m_hasError = false;
+  m_errorMessage.clear();
+  emit errorChanged();
+}
+
+void CatalogData::setErrorMessage(const QString &message) {
+  const bool hasErrorNow = !message.isEmpty();
+  if (m_hasError == hasErrorNow && m_errorMessage == message) {
+    return;
+  }
+  m_hasError = hasErrorNow;
+  m_errorMessage = message;
+  emit errorChanged();
+}
+
+void CatalogData::clearWarning() {
+  if (!m_hasWarning && m_warningMessage.isEmpty()) {
+    return;
+  }
+  m_hasWarning = false;
+  m_warningMessage.clear();
+  emit warningChanged();
+}
+
+void CatalogData::setWarningMessage(const QString &message) {
+  const bool hasWarningNow = !message.isEmpty();
+  if (m_hasWarning == hasWarningNow && m_warningMessage == message) {
+    return;
+  }
+  m_hasWarning = hasWarningNow;
+  m_warningMessage = message;
+  emit warningChanged();
 }

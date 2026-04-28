@@ -103,8 +103,13 @@ if(PICKETT_BUILD_TESTS)
         tests/test_fit_parser.cpp
         tests/test_spe_parser.cpp
         tests/test_spectral_file_service.cpp
+        tests/test_model_error_state.cpp
         src/services/spectralfileservice.cpp
         src/services/spectralfileservice.h
+        src/models/spectrumdata.cpp
+        src/models/spectrumdata.h
+        src/models/catalogdata.cpp
+        src/models/catalogdata.h
     )
     
     target_link_libraries(test_parsers PRIVATE

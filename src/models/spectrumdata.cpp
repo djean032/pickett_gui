@@ -1,18 +1,66 @@
 #include "spectrumdata.h"
 #include <algorithm>
 
+namespace {
+
+QString firstErrorMessage(const QVector<ParserError> &errors,
+                         const QString &fallback) {
+  if (errors.isEmpty()) {
+    return fallback;
+  }
+  return errors[0].message;
+}
+
+bool hasFatalError(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (error.isFatal) {
+      return true;
+    }
+  }
+  return false;
+}
+
+QString firstFatalMessage(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (error.isFatal) {
+      return error.message;
+    }
+  }
+  return QString();
+}
+
+QString firstWarningMessage(const QVector<ParserError> &errors) {
+  for (const auto &error : errors) {
+    if (!error.isFatal) {
+      return error.message;
+    }
+  }
+  return QString();
+}
+
+} // namespace
+
 SpectrumData::SpectrumData(QObject *parent) : QObject(parent) {}
 
 void SpectrumData::loadFile(const QString &filePath) {
   if (!m_fileService) {
+    setErrorMessage("File service is not configured");
     return;
   }
 
   m_pendingFileName = filePath;
+  clearError();
+  clearWarning();
+  setLoading(true);
   m_pendingRequestId = m_fileService->loadSpeAsync(filePath);
 }
 
 SpectralFileService *SpectrumData::fileService() const { return m_fileService; }
+bool SpectrumData::isLoading() const { return m_isLoading; }
+bool SpectrumData::hasError() const { return m_hasError; }
+QString SpectrumData::errorMessage() const { return m_errorMessage; }
+bool SpectrumData::hasWarning() const { return m_hasWarning; }
+QString SpectrumData::warningMessage() const { return m_warningMessage; }
 
 void SpectrumData::setFileService(SpectralFileService *service) {
   if (m_fileService == service) {
@@ -40,8 +88,29 @@ void SpectrumData::onSpeLoaded(
     return;
   }
 
+  setLoading(false);
+
   if (!result.success || result.points.isEmpty()) {
+    clearWarning();
+    if (hasFatalError(result.errors) || result.errors.isEmpty()) {
+      const QString fatalMessage = firstFatalMessage(result.errors);
+      setErrorMessage(!fatalMessage.isEmpty()
+                          ? fatalMessage
+                          : firstErrorMessage(result.errors,
+                                              "Failed to load spectrum file"));
+    } else {
+      clearError();
+      setWarningMessage(firstWarningMessage(result.errors));
+    }
     return;
+  }
+
+  clearError();
+  const QString warning = firstWarningMessage(result.errors);
+  if (!warning.isEmpty()) {
+    setWarningMessage(warning);
+  } else {
+    clearWarning();
   }
 
   std::vector<double> freqs;
@@ -78,11 +147,59 @@ void SpectrumData::clearData() {
   m_yMin = 0.0;
   m_yMax = 0.0;
   m_fileName.clear();
+  clearError();
+  clearWarning();
   emit dataChanged();
   emit fileNameChanged();
 }
 
 bool SpectrumData::hasData() const { return !m_xData.empty(); }
+
+void SpectrumData::setLoading(bool loading) {
+  if (m_isLoading == loading) {
+    return;
+  }
+  m_isLoading = loading;
+  emit loadingChanged();
+}
+
+void SpectrumData::clearError() {
+  if (!m_hasError && m_errorMessage.isEmpty()) {
+    return;
+  }
+  m_hasError = false;
+  m_errorMessage.clear();
+  emit errorChanged();
+}
+
+void SpectrumData::setErrorMessage(const QString &message) {
+  const bool hasErrorNow = !message.isEmpty();
+  if (m_hasError == hasErrorNow && m_errorMessage == message) {
+    return;
+  }
+  m_hasError = hasErrorNow;
+  m_errorMessage = message;
+  emit errorChanged();
+}
+
+void SpectrumData::clearWarning() {
+  if (!m_hasWarning && m_warningMessage.isEmpty()) {
+    return;
+  }
+  m_hasWarning = false;
+  m_warningMessage.clear();
+  emit warningChanged();
+}
+
+void SpectrumData::setWarningMessage(const QString &message) {
+  const bool hasWarningNow = !message.isEmpty();
+  if (m_hasWarning == hasWarningNow && m_warningMessage == message) {
+    return;
+  }
+  m_hasWarning = hasWarningNow;
+  m_warningMessage = message;
+  emit warningChanged();
+}
 
 void SpectrumData::decimate(const std::vector<double> &freqs,
                             const std::vector<double> &intensities) {

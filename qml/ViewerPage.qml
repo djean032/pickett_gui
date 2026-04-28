@@ -46,14 +46,16 @@ Page {
             }
 
             Button {
-                text: qsTr("Load Spectrum")
+                text: dataModel && dataModel.isLoading ? qsTr("Loading Spectrum...") : qsTr("Load Spectrum")
                 focusPolicy: Qt.NoFocus
+                enabled: !dataModel || !dataModel.isLoading
                 onClicked: spectrumFileDialog.open()
             }
 
             Button {
-                text: qsTr("Load Catalog")
+                text: catalogData.isLoading ? qsTr("Loading Catalog...") : qsTr("Load Catalog")
                 focusPolicy: Qt.NoFocus
+                enabled: !catalogData.isLoading
                 onClicked: catalogFileDialog.open()
             }
 
@@ -61,6 +63,62 @@ Page {
                 text: dataModel ? dataModel.fileName : qsTr("No file loaded")
                 elide: Text.ElideMiddle
                 Layout.fillWidth: true
+            }
+        }
+
+        Rectangle {
+            visible: (dataModel && dataModel.hasError) || catalogData.hasError
+            Layout.fillWidth: true
+            color: "#ffe8e8"
+            border.color: "#d06a6a"
+            border.width: 1
+            radius: 4
+            implicitHeight: errorText.implicitHeight + 16
+
+            Text {
+                id: errorText
+                anchors.fill: parent
+                anchors.margins: 8
+                color: "#8c1f1f"
+                wrapMode: Text.Wrap
+                text: {
+                    var messages = []
+                    if (dataModel && dataModel.hasError) {
+                        messages.push("Spectrum: " + dataModel.errorMessage)
+                    }
+                    if (catalogData.hasError) {
+                        messages.push("Catalog: " + catalogData.errorMessage)
+                    }
+                    return messages.join("\n")
+                }
+            }
+        }
+
+        Rectangle {
+            visible: (dataModel && dataModel.hasWarning) || catalogData.hasWarning
+            Layout.fillWidth: true
+            color: "#fff6dd"
+            border.color: "#c99a2e"
+            border.width: 1
+            radius: 4
+            implicitHeight: warningText.implicitHeight + 16
+
+            Text {
+                id: warningText
+                anchors.fill: parent
+                anchors.margins: 8
+                color: "#6a4a07"
+                wrapMode: Text.Wrap
+                text: {
+                    var messages = []
+                    if (dataModel && dataModel.hasWarning) {
+                        messages.push("Spectrum: " + dataModel.warningMessage)
+                    }
+                    if (catalogData.hasWarning) {
+                        messages.push("Catalog: " + catalogData.warningMessage)
+                    }
+                    return messages.join("\n")
+                }
             }
         }
 

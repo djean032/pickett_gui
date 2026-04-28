@@ -13,6 +13,11 @@ class SpectrumData : public QObject {
   Q_PROPERTY(double yMax READ yMax NOTIFY dataChanged)
   Q_PROPERTY(QString fileName READ fileName NOTIFY fileNameChanged)
   Q_PROPERTY(bool hasData READ hasData NOTIFY dataChanged)
+  Q_PROPERTY(bool isLoading READ isLoading NOTIFY loadingChanged)
+  Q_PROPERTY(bool hasError READ hasError NOTIFY errorChanged)
+  Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorChanged)
+  Q_PROPERTY(bool hasWarning READ hasWarning NOTIFY warningChanged)
+  Q_PROPERTY(QString warningMessage READ warningMessage NOTIFY warningChanged)
   Q_PROPERTY(SpectralFileService *fileService READ fileService WRITE
                  setFileService NOTIFY fileServiceChanged)
 
@@ -30,12 +35,20 @@ public:
   double yMax() const;
   QString fileName() const;
   bool hasData() const;
+  bool isLoading() const;
+  bool hasError() const;
+  QString errorMessage() const;
+  bool hasWarning() const;
+  QString warningMessage() const;
   SpectralFileService *fileService() const;
   void setFileService(SpectralFileService *service);
 
 signals:
   void dataChanged();
   void fileNameChanged();
+  void loadingChanged();
+  void errorChanged();
+  void warningChanged();
   void fileServiceChanged();
 
 private slots:
@@ -52,9 +65,19 @@ private:
   QString m_pendingFileName;
   SpectralFileService *m_fileService = nullptr;
   quint64 m_pendingRequestId = 0;
+  bool m_isLoading = false;
+  bool m_hasError = false;
+  QString m_errorMessage;
+  bool m_hasWarning = false;
+  QString m_warningMessage;
 
   void decimate(const std::vector<double> &freqs,
                 const std::vector<double> &intensities);
+  void setLoading(bool loading);
+  void clearError();
+  void setErrorMessage(const QString &message);
+  void clearWarning();
+  void setWarningMessage(const QString &message);
 };
 
 #endif // SPECTRUMDATA_H
