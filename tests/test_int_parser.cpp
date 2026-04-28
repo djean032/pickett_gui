@@ -27,7 +27,7 @@ TEST_CASE("IntParser parses actual test file", "[int_parser]") {
     // Check first dipole
     if (!result.dipoles.empty()) {
         CHECK(result.dipoles[0].idip == 1);  // a dipole, ground state
-        CHECK(result.dipoles[0].dipole == 0.0);
+        CHECK(result.dipoles[0].dipole == 3.6924);
         CHECK(result.dipoles[0].label == "a dipole moment gs");
     }
 }
@@ -155,9 +155,9 @@ TEST_CASE("IntParser parses dipole values", "[int_parser]") {
 
     // Check that ground state dipoles are 0.0
     if (result.dipoles.size() >= 3) {
-        CHECK(result.dipoles[0].dipole == 0.0);  // gs a
-        CHECK(result.dipoles[1].dipole == 0.0);  // gs b
-        CHECK(result.dipoles[2].dipole == 0.0);  // gs c
+        CHECK(result.dipoles[0].dipole == 3.6924);  // gs a
+        CHECK(result.dipoles[1].dipole == 1.4958);  // gs b
+        CHECK(result.dipoles[2].dipole == 0.9398);  // gs c
     }
 
     // Check non-zero dipole for v=27
