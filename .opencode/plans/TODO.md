@@ -17,11 +17,11 @@
   - UI layer can display meaningful error messages
 
 ### Modern C++ Features
-- [ ] Replace bool success + error vector with std::expected (C++23) or similar
+- [x] Replace bool success + error vector with std::expected (C++23) or similar
   - Forces error handling at call sites
   - More expressive error types
   - Can include error context
-- [ ] Use constexpr for compile-time constants
+- [x] Use constexpr for compile-time constants
   - Header/footer sizes
   - Mathematical constants
   - Array sizes where applicable

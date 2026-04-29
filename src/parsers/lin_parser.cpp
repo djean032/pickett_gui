@@ -10,6 +10,17 @@ namespace pickett {
 
 // parse_int_safe and parse_double_safe now come from utils.h
 
+namespace {
+constexpr size_t LIN_QN_COUNT = 12;
+constexpr size_t LIN_QN_WIDTH = 3;
+constexpr size_t LIN_QN_BLOCK_WIDTH = LIN_QN_COUNT * LIN_QN_WIDTH;
+constexpr int LIN_QN_MIN = -99;
+constexpr int LIN_QN_MAX = 999;
+constexpr size_t LIN_QN_BUFFER_SIZE = 4;
+constexpr int LIN_SCIENTIFIC_SIG_FIGS = 2;
+constexpr int LIN_FIXED_PRECISION = 6;
+} // namespace
+
 LinParseExpected LinParser::parse_file(const std::string &filepath) {
   LinParseResult result;
   std::ifstream file(filepath);
@@ -33,7 +44,7 @@ LinParseExpected LinParser::parse_file(const std::string &filepath) {
       continue;
 
     // Skip lines that are too short for QN fields
-    if (line.length() < 36) {
+    if (line.length() < LIN_QN_BLOCK_WIDTH) {
       result.errors.push_back({line_num, "Line too short (< 36 chars)"});
       continue;
     }
@@ -42,9 +53,9 @@ LinParseExpected LinParser::parse_file(const std::string &filepath) {
     std::vector<std::string> line_errors;
 
     // Parse 12 quantum numbers (3 characters each, positions 0-35)
-    for (int i = 0; i < 12; ++i) {
-      size_t start_pos = i * 3;
-      std::string qn_str = line.substr(start_pos, 3);
+    for (size_t i = 0; i < LIN_QN_COUNT; ++i) {
+      size_t start_pos = i * LIN_QN_WIDTH;
+      std::string qn_str = line.substr(start_pos, LIN_QN_WIDTH);
 
       // Trim whitespace
       size_t first = qn_str.find_first_not_of(" \t");
@@ -69,7 +80,7 @@ LinParseExpected LinParser::parse_file(const std::string &filepath) {
     }
 
     // Parse FREQ, ERR, WT from column 36 onwards (freeform)
-    std::string remainder = line.substr(36);
+    std::string remainder = line.substr(LIN_QN_BLOCK_WIDTH);
 
     // Parse FREQ
     size_t pos = 0;
@@ -150,14 +161,14 @@ LinParseExpected LinParser::parse_file(const std::string &filepath) {
 std::string LinParser::format_qn(int qn) {
   // I3 format: 3 characters, right-justified, space-padded
   // For values -99 to 999
-  char buf[4];
-  if (qn >= -99 && qn <= 999) {
+  char buf[LIN_QN_BUFFER_SIZE];
+  if (qn >= LIN_QN_MIN && qn <= LIN_QN_MAX) {
     snprintf(buf, sizeof(buf), "%3d", qn);
   } else {
     // Out of range - use ** or similar (as per spinv.txt)
     snprintf(buf, sizeof(buf), " **");
   }
-  return std::string(buf, 3);
+  return std::string(buf, LIN_QN_WIDTH);
 }
 
 // Format double for LIN file (FREQ/ERR/WT in freeform)
@@ -169,11 +180,11 @@ std::string LinParser::format_double(double value, bool is_scientific) {
   if (is_scientific) {
     // Use common utility for scientific notation with 2 sig figs, 2-digit
     // exponent
-    return format_scientific_lin(value, 2);
+    return format_scientific_lin(value, LIN_SCIENTIFIC_SIG_FIGS);
   } else {
     // Fixed notation for frequency/error - 6 decimal places
     std::ostringstream oss;
-    oss << std::fixed << std::setprecision(6) << value;
+    oss << std::fixed << std::setprecision(LIN_FIXED_PRECISION) << value;
     return oss.str();
   }
 }
@@ -189,7 +200,7 @@ bool LinParser::write(std::ostream &os, const LinParseResult &data,
   try {
     for (const auto &record : data.records) {
       // Write 12 quantum numbers in I3 format (positions 1-36)
-      for (int i = 0; i < 12; ++i) {
+      for (size_t i = 0; i < LIN_QN_COUNT; ++i) {
         os << format_qn(record.qn[i]);
       }
 

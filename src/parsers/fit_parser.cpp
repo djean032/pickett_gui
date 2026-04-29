@@ -8,6 +8,26 @@
 
 namespace pickett {
 
+namespace {
+constexpr int FIT_HEADER_LINE_COUNT = 4;
+constexpr int FIT_PARAM_START_INDEX = 4;
+constexpr size_t FIT_CORR_DETECTION_MIN_LINE_LEN = 20;
+constexpr size_t FIT_CORR_MIN_LINE_LEN = 16;
+constexpr size_t FIT_CORR_ENTRY_WIDTH = 16;
+constexpr size_t FIT_CORR_ROW_WIDTH = 3;
+constexpr size_t FIT_CORR_COL_WIDTH = 3;
+constexpr size_t FIT_CORR_VAL_WIDTH = 10;
+
+constexpr size_t FIT_LINE_RECORD_MIN_LEN = 50;
+constexpr size_t FIT_SEQ_COLON_MAX_POS = 6;
+constexpr size_t FIT_QN_COUNT = 12;
+constexpr size_t FIT_QN_WIDTH = 3;
+constexpr size_t FIT_QN_BLOCK_WIDTH = FIT_QN_COUNT * FIT_QN_WIDTH;
+constexpr size_t FIT_QN_START_AFTER_COLON = 2;
+constexpr double FIT_FREQ_EQUAL_EPSILON = 1e-4;
+constexpr int FIT_DEFAULT_COPY = 1;
+} // namespace
+
 // Helper function to extract integer value after a pattern
 static bool extract_int_after_pattern(const std::string &line,
                                       const std::string &pattern, int &result) {
@@ -102,14 +122,15 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
 
   // Phase 1: Parse header (first 4 lines)
   for (int line_num = 1;
-       line_num <= 4 && line_num <= static_cast<int>(all_lines.size());
+       line_num <= FIT_HEADER_LINE_COUNT &&
+       line_num <= static_cast<int>(all_lines.size());
        ++line_num) {
     parse_header_line(all_lines[line_num - 1], result.header, line_num,
                       result.errors);
   }
 
   // Phase 2: Parse initial parameters (lines 5 up to "parameters read")
-  int param_start = 4; // Line 5 (0-indexed)
+  int param_start = FIT_PARAM_START_INDEX; // Line 5 (0-indexed)
   for (int i = param_start; i < static_cast<int>(all_lines.size()); ++i) {
     const std::string &param_line = all_lines[i];
 
@@ -184,7 +205,7 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
 
     // Check for correlation matrix start (NORMALIZED DIAGONAL or packed format)
     if (current_line.find("NORMALIZED DIAGONAL:") != std::string::npos ||
-        (current_line.size() >= 20 &&
+        (current_line.size() >= FIT_CORR_DETECTION_MIN_LINE_LEN &&
          current_line.find("1.00000E+000") != std::string::npos)) {
       // We've reached the post-line-record section
       break;
@@ -215,7 +236,7 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
     // Skip section headers that contain colons but aren't data
     // A valid line record should have the colon within the first 6 characters
     size_t colon_pos = current_line.find(':');
-    if (colon_pos > 6 || colon_pos == std::string::npos) {
+    if (colon_pos > FIT_SEQ_COLON_MAX_POS || colon_pos == std::string::npos) {
       line_idx++;
       continue;
     }
@@ -233,7 +254,8 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
           just_saw_rejected_marker = false;
           // Increment rejected count (SPFIT counts blends as 1)
           result.rejected_line_count++;
-        } else if (std::abs(record.exp_freq - rejected_blend_freq) > 0.0001) {
+        } else if (std::abs(record.exp_freq - rejected_blend_freq) >
+                   FIT_FREQ_EQUAL_EPSILON) {
           // Different frequency - this is a new blend or single line
           // Check if there's a marker before it
           bool found_marker = false;
@@ -320,6 +342,11 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
 
   // Phase 6: Skip Normalized Diagonal section
   // Look for the start of correlation data (packed 16-char format)
+  int max_parameter_index = static_cast<int>(result.parameters.size());
+  if (max_parameter_index <= 0 && result.header.num_parameters > 0) {
+    max_parameter_index = result.header.num_parameters;
+  }
+
   while (line_idx < static_cast<int>(all_lines.size())) {
     const std::string &current_line = all_lines[line_idx];
 
@@ -331,7 +358,7 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
 
     // Skip Normalized Diagonal section (lines with pairs of index and value)
     if (current_line.find("NORMALIZED DIAGONAL:") != std::string::npos ||
-        (current_line.size() >= 20 &&
+        (current_line.size() >= FIT_CORR_DETECTION_MIN_LINE_LEN &&
          current_line.find("1.00000E+000") != std::string::npos)) {
       line_idx++;
       continue;
@@ -344,10 +371,11 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
     }
 
     // Try to parse as correlation (packed 16-char format)
-    if (current_line.size() >= 16) {
+    if (current_line.size() >= FIT_CORR_MIN_LINE_LEN) {
       std::string error;
       std::vector<FitCorrelationEntry> entries;
-      if (parse_correlation_line(current_line, entries, error)) {
+      if (parse_correlation_line(current_line, entries, error,
+                                 max_parameter_index)) {
         // Found correlation data - don't advance line_idx, let the next loop
         // handle it
         break;
@@ -376,7 +404,7 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
     }
 
     // Skip lines that are too short
-    if (current_line.size() < 16) {
+    if (current_line.size() < FIT_CORR_MIN_LINE_LEN) {
       if (correlation_started) {
         // If we've started and see a short line, might be the end
         break;
@@ -388,7 +416,8 @@ FitParseExpected FitParser::parse_file(const std::string &filepath) {
     // Try to parse as correlation (packed format only)
     std::string error;
     std::vector<FitCorrelationEntry> entries;
-    if (parse_correlation_line(current_line, entries, error)) {
+    if (parse_correlation_line(current_line, entries, error,
+                               max_parameter_index)) {
       result.correlations.insert(result.correlations.end(), entries.begin(),
                                  entries.end());
       correlation_started = true;
@@ -510,7 +539,7 @@ bool FitParser::parse_line_record(const std::string &line,
   // Pos 7-42: QN field (36 chars, 12 x I3)
   // Pos 43+:  Numeric fields
 
-  if (line.size() < 50) {
+  if (line.size() < FIT_LINE_RECORD_MIN_LEN) {
     error = "Line record too short";
     return false;
   }
@@ -518,7 +547,7 @@ bool FitParser::parse_line_record(const std::string &line,
   try {
     // Find the colon to get sequence number
     size_t colon_pos = line.find(':');
-    if (colon_pos == std::string::npos || colon_pos > 6) {
+    if (colon_pos == std::string::npos || colon_pos > FIT_SEQ_COLON_MAX_POS) {
       error = "Cannot find sequence number colon";
       return false;
     }
@@ -533,18 +562,18 @@ bool FitParser::parse_line_record(const std::string &line,
 
     // QN field starts at colon+2 (after ": "), is 36 characters
     // From qnfmt2: 12 QNs printed as %3d, each taking 3 characters
-    size_t qn_start = colon_pos + 2;
-    if (qn_start + 36 > line.size()) {
+    size_t qn_start = colon_pos + FIT_QN_START_AFTER_COLON;
+    if (qn_start + FIT_QN_BLOCK_WIDTH > line.size()) {
       error = "Line too short for QN field";
       return false;
     }
 
-    std::string qn_str = line.substr(qn_start, 36);
+    std::string qn_str = line.substr(qn_start, FIT_QN_BLOCK_WIDTH);
 
     // Parse 12 quantum numbers, each 3 characters (I3 format with leading
     // spaces)
-    for (int i = 0; i < 12; i++) {
-      std::string qn_sub = qn_str.substr(i * 3, 3);
+    for (size_t i = 0; i < FIT_QN_COUNT; i++) {
+      std::string qn_sub = qn_str.substr(i * FIT_QN_WIDTH, FIT_QN_WIDTH);
       auto qn_val = parse_int_safe(qn_sub);
       if (qn_val.second.empty()) {
         record.qn[i] = qn_val.first;
@@ -553,8 +582,8 @@ bool FitParser::parse_line_record(const std::string &line,
       }
     }
 
-    // Numeric fields start at position qn_start + 36
-    size_t data_start = qn_start + 36;
+    // Numeric fields start at position qn_start + QN block width
+    size_t data_start = qn_start + FIT_QN_BLOCK_WIDTH;
     if (data_start >= line.size()) {
       error = "Line too short for numeric fields";
       return false;
@@ -580,7 +609,7 @@ bool FitParser::parse_line_record(const std::string &line,
       record.is_blend = true;
 
       // Determine blend master
-      if (std::abs(record.exp_freq - prev_exp_freq) < 0.0001) {
+      if (std::abs(record.exp_freq - prev_exp_freq) < FIT_FREQ_EQUAL_EPSILON) {
         // Same frequency as previous, part of existing blend
         record.blend_master_line = prev_blend_master;
       } else {
@@ -711,19 +740,19 @@ bool FitParser::parse_updated_parameter_line(const std::string &line,
   }
 
   // Set copy to 1 (not specified in this format, assume 1)
-  param.copy = 1;
+  param.copy = FIT_DEFAULT_COPY;
 
   return true;
 }
 
 bool FitParser::parse_correlation_line(
     const std::string &line, std::vector<FitCorrelationEntry> &entries,
-    std::string &error) {
+    std::string &error, int max_parameter_index) {
   // Correlation format from prcorr() in CALFIT: "%3d%3d%10.6f"
   // 3 chars for row (I3), 3 chars for col (I3), 10 chars for value (F10.6)
   // Total 16 chars per entry, packed 8 per line
 
-  if (line.size() < 16) {
+  if (line.size() < FIT_CORR_MIN_LINE_LEN) {
     error = "Correlation line too short";
     return false;
   }
@@ -731,16 +760,17 @@ bool FitParser::parse_correlation_line(
   // Parse entries at 16-character intervals
   // Each entry: row (3 chars), col (3 chars), value (10 chars)
   size_t pos = 0;
-  const int entry_width = 16;
+  const size_t entry_width = FIT_CORR_ENTRY_WIDTH;
   bool found_any = false;
 
   while (pos + entry_width <= line.size()) {
     std::string entry = line.substr(pos, entry_width);
 
     // Extract components
-    std::string row_str = entry.substr(0, 3);
-    std::string col_str = entry.substr(3, 3);
-    std::string val_str = entry.substr(6, 10);
+    std::string row_str = entry.substr(0, FIT_CORR_ROW_WIDTH);
+    std::string col_str = entry.substr(FIT_CORR_ROW_WIDTH, FIT_CORR_COL_WIDTH);
+    std::string val_str =
+        entry.substr(FIT_CORR_ROW_WIDTH + FIT_CORR_COL_WIDTH, FIT_CORR_VAL_WIDTH);
 
     // Parse row and column
     auto row = parse_int_safe(row_str);
@@ -748,10 +778,9 @@ bool FitParser::parse_correlation_line(
     auto val = parse_double_safe(val_str);
 
     // Validate: row and col must be positive integers with valid range
-    // For this file format, parameters are typically 1-500
     if (row.second.empty() && col.second.empty() && val.second.empty() &&
-        row.first > 0 && col.first > 0 && row.first <= 500 &&
-        col.first <= 500 && // Reasonable upper limit
+        row.first > 0 && col.first > 0 && row.first <= max_parameter_index &&
+        col.first <= max_parameter_index &&
         row.first != col.first) {
       FitCorrelationEntry ce;
       ce.row = row.first;

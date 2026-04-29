@@ -1,6 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
-#include <sstream>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <limits>
+#include <sstream>
 #include "../src/parsers/cat_parser.h"
 
 using namespace pickett;
@@ -166,4 +170,81 @@ TEST_CASE("CatParser detects inconsistent QFMT as error", "[cat_parser]") {
             CHECK(result->records[i].qnfmt == first_qnfmt);
         }
     }
+}
+
+TEST_CASE("CatParser decodes z9 and Z9 QN tokens", "[cat_parser]") {
+    const std::filesystem::path temp_path =
+        std::filesystem::temp_directory_path() / "cat_parser_alpha_extents.cat";
+
+    {
+        std::ofstream out(temp_path);
+        REQUIRE(out.is_open());
+
+        // Fixed-width CAT line:
+        // F13.4, F8.4, F8.4, I2, F10.4, I3, I7, I4, 12I2
+        out << std::setw(13) << std::fixed << std::setprecision(4) << 12345.6789;
+        out << std::setw(8) << std::fixed << std::setprecision(4) << 0.0010;
+        out << std::setw(8) << std::fixed << std::setprecision(4) << -5.4321;
+        out << std::setw(2) << 3;
+        out << std::setw(10) << std::fixed << std::setprecision(4) << 42.0000;
+        out << std::setw(3) << 7;
+        out << std::setw(7) << 1234567;
+        out << std::setw(4) << 1404;
+
+        // 12 two-character QN fields.
+        out << "z9"; // should decode as negative alphabetic extent
+        out << "Z9"; // should decode as positive alphabetic extent
+        for (int i = 0; i < 10; ++i) {
+            out << "  ";
+        }
+        out << "\n";
+    }
+
+    auto result = CatParser::parse_file(temp_path.string());
+    REQUIRE(result.has_value());
+    REQUIRE(result->errors.empty());
+    REQUIRE(result->records.size() == 1);
+
+    const auto &rec = result->records[0];
+    CHECK(rec.qn[0] == -269);
+    CHECK(rec.qn[1] == 359);
+
+    std::error_code ec;
+    std::filesystem::remove(temp_path, ec);
+}
+
+TEST_CASE("CatParser decodes overflow marker QN token", "[cat_parser]") {
+    const std::filesystem::path temp_path =
+        std::filesystem::temp_directory_path() / "cat_parser_overflow_qn.cat";
+
+    {
+        std::ofstream out(temp_path);
+        REQUIRE(out.is_open());
+
+        out << std::setw(13) << std::fixed << std::setprecision(4) << 54321.1234;
+        out << std::setw(8) << std::fixed << std::setprecision(4) << 0.0001;
+        out << std::setw(8) << std::fixed << std::setprecision(4) << -1.2345;
+        out << std::setw(2) << 3;
+        out << std::setw(10) << std::fixed << std::setprecision(4) << 12.3456;
+        out << std::setw(3) << 5;
+        out << std::setw(7) << 7654321;
+        out << std::setw(4) << 1404;
+
+        out << "**";
+        for (int i = 0; i < 11; ++i) {
+            out << "  ";
+        }
+        out << "\n";
+    }
+
+    auto result = CatParser::parse_file(temp_path.string());
+    REQUIRE(result.has_value());
+    REQUIRE(result->errors.empty());
+    REQUIRE(result->records.size() == 1);
+
+    const auto &rec = result->records[0];
+    CHECK(rec.qn[0] == std::numeric_limits<int>::max());
+
+    std::error_code ec;
+    std::filesystem::remove(temp_path, ec);
 }

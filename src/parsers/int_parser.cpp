@@ -1,6 +1,5 @@
 #include "int_parser.h"
 #include "utils.h"
-#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iomanip>
@@ -10,24 +9,41 @@ namespace pickett {
 
 // trim, parse_int_safe, and parse_double_safe now come from utils.h
 
+namespace {
+constexpr int DECIMAL_BASE = 10;
+constexpr int FLAGS_THOUSANDS = 1000;
+constexpr int FLAGS_HUNDREDS = 100;
+constexpr int FLAGS_TENS = 10;
+constexpr double DEFAULT_TEMP_K = 300.0;
+constexpr int DEFAULT_MAXV = 999;
+
+int pow10_int(int digits) {
+  int result = 1;
+  for (int i = 0; i < digits; ++i) {
+    result *= DECIMAL_BASE;
+  }
+  return result;
+}
+} // namespace
+
 void IntParser::decode_flags(int flags, int &irflg, int &outflg, int &strflg,
                              int &egyflg) {
-  irflg = flags / 1000;
-  flags %= 1000;
-  outflg = flags / 100;
-  flags %= 100;
-  strflg = flags / 10;
-  egyflg = flags % 10;
+  irflg = flags / FLAGS_THOUSANDS;
+  flags %= FLAGS_THOUSANDS;
+  outflg = flags / FLAGS_HUNDREDS;
+  flags %= FLAGS_HUNDREDS;
+  strflg = flags / FLAGS_TENS;
+  egyflg = flags % FLAGS_TENS;
 }
 
 IDIPInfo IntParser::decode_idip(int idip, int nvib_digits) {
   IDIPInfo info;
-  int v_mod = static_cast<int>(std::pow(10, nvib_digits)); // 10, 100, or 1000
+  int v_mod = pow10_int(nvib_digits);
 
   int remaining = std::abs(idip); // Handle negative IDIP
 
-  info.sym = remaining % 10;
-  remaining /= 10;
+  info.sym = remaining % DECIMAL_BASE;
+  remaining /= DECIMAL_BASE;
 
   info.v1 = remaining % v_mod;
   remaining /= v_mod;
@@ -35,11 +51,11 @@ IDIPInfo IntParser::decode_idip(int idip, int nvib_digits) {
   info.v2 = remaining % v_mod;
   remaining /= v_mod;
 
-  info.i1 = remaining % 10;
-  remaining /= 10;
+  info.i1 = remaining % DECIMAL_BASE;
+  remaining /= DECIMAL_BASE;
 
-  info.typ = remaining % 10;
-  remaining /= 10;
+  info.typ = remaining % DECIMAL_BASE;
+  remaining /= DECIMAL_BASE;
 
   info.fc = remaining; // Remaining digit(s)
 
@@ -108,12 +124,12 @@ bool IntParser::parse_header_line(const std::string &line, IntHeader &header,
 
   // Parse TEMP (default 300K if not present)
   if (!(iss >> header.temp)) {
-    header.temp = 300.0; // Default per docs
+    header.temp = DEFAULT_TEMP_K; // Default per docs
   }
 
   // Parse MAXV (default 999 if not present)
   if (!(iss >> header.maxv)) {
-    header.maxv = 999; // Default per docs
+    header.maxv = DEFAULT_MAXV; // Default per docs
   }
 
   return true;
@@ -225,23 +241,24 @@ IntParseExpected IntParser::parse_file(const std::string &filepath) {
 
 // Encode IDIP from components
 int IntParser::encode_idip(const IDIPInfo &info, int nvib_digits) {
-  int v_mod = static_cast<int>(std::pow(10, nvib_digits));
+  int v_mod = pow10_int(nvib_digits);
 
   // Build IDIP from components (reverse of decode_idip)
   // Order: FC, TYP, I1, V2, V1, SYM
   int idip = info.fc;
-  idip = idip * 10 + info.typ;
-  idip = idip * 10 + info.i1;
+  idip = idip * DECIMAL_BASE + info.typ;
+  idip = idip * DECIMAL_BASE + info.i1;
   idip = idip * v_mod + info.v2;
   idip = idip * v_mod + info.v1;
-  idip = idip * 10 + info.sym;
+  idip = idip * DECIMAL_BASE + info.sym;
 
   return idip;
 }
 
 // Encode flags from components
 static int encode_flags(int irflg, int outflg, int strflg, int egyflg) {
-  return irflg * 1000 + outflg * 100 + strflg * 10 + egyflg;
+  return irflg * FLAGS_THOUSANDS + outflg * FLAGS_HUNDREDS +
+         strflg * FLAGS_TENS + egyflg;
 }
 
 bool IntParser::write(std::ostream &os, const IntParseResult &data,

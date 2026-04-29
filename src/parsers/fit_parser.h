@@ -96,7 +96,8 @@ private:
                                 std::string &error);
   static bool parse_correlation_line(const std::string &line,
                                      std::vector<FitCorrelationEntry> &entries,
-                                     std::string &error);
+                                     std::string &error,
+                                     int max_parameter_index);
   static bool parse_updated_parameter_line(const std::string &line,
                                            FitParameter &param,
                                            std::string &error);

@@ -126,21 +126,11 @@ bool ParParser::parse_option_line(const std::string &line, ParOptionLine &opt,
       opt.xopt = first_values[idx++];
   }
 
-  // Remaining comma_parts are individual fields (may be empty)
-  // We only set values if not already set from the first part
-  // Fields in order: KNMIN, KNMAX, IXX, IAX, WTPL, WTMN, VSYM, EWT, DIAG, XOPT
-  // But we need to account for how many were already parsed from first part
-  // The first part has CHR + values up to some point, then commas start
-  // comma_parts[1] is the first field AFTER the comma
+  // Remaining comma_parts are individual fields (may be empty).
+  // Values provided in comma-separated form take precedence and overwrite
+  // values parsed from the initial space-separated chunk.
 
-  // Actually, let's think about this differently:
-  // The format is: CHR SPINO NVIB [space sep vals] , [comma sep vals]
-  // Where the comma-separated values start after however many space values
-  //
-  // For simplicity, we just overwrite if the comma part has a value
-  // This handles the case where values are split across both formats
-
-  // Track which fields we've set so we don't overwrite
+  // comma_parts[1] is the first field after the first comma.
   size_t field_idx =
       1; // Start after first comma_part (which we already processed)
 
@@ -465,8 +455,12 @@ bool ParParser::write(std::ostream &os, const ParParseResult &data,
       write_optional(opt.ewt);
       write_optional(opt.diag);
       write_optional(opt.xopt);
-      // Trailing commas to complete the format
-      os << ",,,";
+
+      constexpr int total_option_slots = 13;
+      constexpr int emitted_option_slots = 10;
+      for (int i = emitted_option_slots; i < total_option_slots; ++i) {
+        os << ",";
+      }
       os << "\n";
     }
 

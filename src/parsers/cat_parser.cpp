@@ -7,6 +7,45 @@ namespace pickett {
 
 // parse_int_safe and parse_double_safe now come from utils.h
 
+namespace {
+constexpr int QNFMT_Q_DIVISOR = 100;
+constexpr int QNFMT_H_DIVISOR = 10;
+constexpr int QNFMT_H_MOD = 10;
+
+constexpr size_t CAT_MIN_LINE_LEN = 55;
+constexpr size_t FREQ_START = 0;
+constexpr size_t FREQ_WIDTH = 13;
+constexpr size_t ERR_START = 13;
+constexpr size_t ERR_WIDTH = 8;
+constexpr size_t LGINT_START = 21;
+constexpr size_t LGINT_WIDTH = 8;
+constexpr size_t DR_START = 29;
+constexpr size_t DR_WIDTH = 2;
+constexpr size_t ELO_START = 31;
+constexpr size_t ELO_WIDTH = 10;
+constexpr size_t GUP_START = 41;
+constexpr size_t GUP_WIDTH = 3;
+constexpr size_t TAG_START = 44;
+constexpr size_t TAG_WIDTH = 7;
+constexpr size_t QNFMT_START = 51;
+constexpr size_t QNFMT_WIDTH = 4;
+constexpr size_t QN_FIELD_START = 55;
+constexpr size_t QN_FIELD_WIDTH = 24;
+constexpr size_t QN_COUNT = 12;
+constexpr size_t QN_TOKEN_WIDTH = 2;
+
+constexpr size_t QN_STR_SIZE = 2;
+constexpr char QN_OVERFLOW_MARKER[] = "**";
+constexpr char QN_BLANK[] = "  ";
+constexpr char QN_NEG_PREFIX_MIN = 'a';
+constexpr char QN_NEG_PREFIX_MAX = 'z';
+constexpr char QN_POS_PREFIX_MIN = 'A';
+constexpr char QN_POS_PREFIX_MAX = 'Z';
+constexpr int QN_ALPHA_OFFSET = 1;
+constexpr int QN_TENS_MULTIPLIER = 10;
+constexpr int QN_POS_BASE_TENS_OFFSET = 9;
+} // namespace
+
 // All known QFMT codes and their labels (from spinv.txt documentation)
 static const std::vector<std::string> QFMT_LABELS_0; // Atom - empty
 static const std::vector<std::string> QFMT_LABELS_1 = {
@@ -28,7 +67,7 @@ static const std::vector<std::string> QFMT_LABELS_14 = {
 // Additional codes from documentation can be added here
 
 std::vector<std::string> CatParser::get_qn_labels(int qnfmt) {
-  int q = qnfmt / 100;
+  int q = qnfmt / QNFMT_Q_DIVISOR;
   switch (q) {
   case 0:
     return QFMT_LABELS_0;
@@ -55,24 +94,25 @@ std::vector<std::string> CatParser::get_qn_labels(int qnfmt) {
 
 QNFormat CatParser::decode_qnfmt(int qnfmt) {
   return {
-      qnfmt / 100,       // Q: base format code
-      (qnfmt / 10) % 10, // H: half-integer flags
-      qnfmt % 10         // NQN: number of quanta per state
+      qnfmt / QNFMT_Q_DIVISOR,                  // Q: base format code
+      (qnfmt / QNFMT_H_DIVISOR) % QNFMT_H_MOD, // H: half-integer flags
+      qnfmt % QNFMT_H_MOD                      // NQN: number of quanta per
+                                               // state
   };
 }
 
 std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {
-  if (s.size() != 2) {
+  if (s.size() != QN_STR_SIZE) {
     return {0, "QN field must be exactly 2 characters"};
   }
 
   // Check for overflow marker
-  if (s == "**") {
+  if (s == QN_OVERFLOW_MARKER) {
     return {std::numeric_limits<int>::max(), ""};
   }
 
   // Check for blank
-  if (s == "  " || s == "  ") {
+  if (s == QN_BLANK) {
     return {0, ""};
   }
 
@@ -81,26 +121,27 @@ std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {
 
   auto is_digit = [](char ch) { return ch >= '0' && ch <= '9'; };
 
-  // Negative: a-i (lowercase) for -10 to -99
-  if (c >= 'a' && c <= 'i') {
+  // Negative: a-z (lowercase)
+  if (c >= QN_NEG_PREFIX_MIN && c <= QN_NEG_PREFIX_MAX) {
     if (!is_digit(d)) {
       return {0, "Malformed QN: digit expected after lowercase letter '" +
                      std::string(1, c) + "', got '" + std::string(1, d) + "'"};
     }
-    int ntens = c - 'a' + 1; // a=1, b=2, ..., i=9
+    int ntens = c - QN_NEG_PREFIX_MIN + QN_ALPHA_OFFSET; // a=1,...,z=26
     int digit = d - '0';
-    return {-(digit + 10 * ntens), ""};
+    return {-(digit + QN_TENS_MULTIPLIER * ntens), ""};
   }
 
-  // Positive: A-N (uppercase) for 100-240
-  if (c >= 'A' && c <= 'N') {
+  // Positive: A-Z (uppercase)
+  if (c >= QN_POS_PREFIX_MIN && c <= QN_POS_PREFIX_MAX) {
     if (!is_digit(d)) {
       return {0, "Malformed QN: digit expected after uppercase letter '" +
                      std::string(1, c) + "', got '" + std::string(1, d) + "'"};
     }
-    int ntens = c - 'A' + 1; // A=1, B=2, ..., N=14
+    int ntens = c - QN_POS_PREFIX_MIN + QN_ALPHA_OFFSET; // A=1,...,Z=26
     int digit = d - '0';
-    return {digit + (9 + ntens) * 10, ""};
+    return {digit + (QN_POS_BASE_TENS_OFFSET + ntens) * QN_TENS_MULTIPLIER,
+            ""};
   }
 
   // Regular number: use safe int parsing
@@ -121,7 +162,6 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
   int line_num = 0;
   bool has_valid_qnfmt = false;
   int detected_qnfmt = -1;
-  int qnfmt_error_count = 0;
 
   while (std::getline(file, line)) {
     line_num++;
@@ -138,7 +178,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
 
     // Skip lines that are too short (need at least 55 chars for QNFMT and QN
     // fields)
-    if (line.length() < 55) {
+    if (line.length() < CAT_MIN_LINE_LEN) {
       result.errors.push_back({line_num, "Line too short (< 55 chars)"});
       continue;
     }
@@ -148,7 +188,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
 
     // Parse fixed-width fields
     // FREQ: positions 0-12 (13 chars)
-    auto freq_result = parse_double_safe(line.substr(0, 13));
+    auto freq_result = parse_double_safe(line.substr(FREQ_START, FREQ_WIDTH));
     if (!freq_result.second.empty()) {
       line_errors.push_back("FREQ: " + freq_result.second);
     } else {
@@ -156,7 +196,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // ERR: positions 13-20 (8 chars)
-    auto err_result = parse_double_safe(line.substr(13, 8));
+    auto err_result = parse_double_safe(line.substr(ERR_START, ERR_WIDTH));
     if (!err_result.second.empty()) {
       line_errors.push_back("ERR: " + err_result.second);
     } else {
@@ -164,7 +204,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // LGINT: positions 21-28 (8 chars)
-    auto lgint_result = parse_double_safe(line.substr(21, 8));
+    auto lgint_result = parse_double_safe(line.substr(LGINT_START, LGINT_WIDTH));
     if (!lgint_result.second.empty()) {
       line_errors.push_back("LGINT: " + lgint_result.second);
     } else {
@@ -172,7 +212,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // DR: positions 29-30 (2 chars)
-    auto dr_result = parse_int_safe(line.substr(29, 2));
+    auto dr_result = parse_int_safe(line.substr(DR_START, DR_WIDTH));
     if (!dr_result.second.empty()) {
       line_errors.push_back("DR: " + dr_result.second);
     } else {
@@ -180,7 +220,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // ELO: positions 31-40 (10 chars)
-    auto elo_result = parse_double_safe(line.substr(31, 10));
+    auto elo_result = parse_double_safe(line.substr(ELO_START, ELO_WIDTH));
     if (!elo_result.second.empty()) {
       line_errors.push_back("ELO: " + elo_result.second);
     } else {
@@ -188,7 +228,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // GUP: positions 41-43 (3 chars)
-    auto gup_result = parse_int_safe(line.substr(41, 3));
+    auto gup_result = parse_int_safe(line.substr(GUP_START, GUP_WIDTH));
     if (!gup_result.second.empty()) {
       line_errors.push_back("GUP: " + gup_result.second);
     } else {
@@ -196,7 +236,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // TAG: positions 44-50 (7 chars)
-    auto tag_result = parse_int_safe(line.substr(44, 7));
+    auto tag_result = parse_int_safe(line.substr(TAG_START, TAG_WIDTH));
     if (!tag_result.second.empty()) {
       line_errors.push_back("TAG: " + tag_result.second);
     } else {
@@ -204,7 +244,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // QNFMT: positions 51-54 (4 chars)
-    auto qnfmt_result = parse_int_safe(line.substr(51, 4));
+    auto qnfmt_result = parse_int_safe(line.substr(QNFMT_START, QNFMT_WIDTH));
     if (!qnfmt_result.second.empty()) {
       line_errors.push_back("QNFMT: " + qnfmt_result.second);
     } else {
@@ -229,9 +269,9 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     // QN: positions 55-78 (24 chars = 12×2)
-    std::string qn_field = line.substr(55, 24);
-    for (int i = 0; i < 12; ++i) {
-      std::string qn_str = qn_field.substr(i * 2, 2);
+    std::string qn_field = line.substr(QN_FIELD_START, QN_FIELD_WIDTH);
+    for (size_t i = 0; i < QN_COUNT; ++i) {
+      std::string qn_str = qn_field.substr(i * QN_TOKEN_WIDTH, QN_TOKEN_WIDTH);
       auto qn_result = decode_qn(qn_str);
       if (!qn_result.second.empty()) {
         line_errors.push_back("QN[" + std::to_string(i) +
