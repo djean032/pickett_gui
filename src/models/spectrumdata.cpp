@@ -1,6 +1,7 @@
 #include "spectrumdata.h"
 
 #include "errors/service_failure.h"
+#include "simd_stats.h"
 
 #include <algorithm>
 
@@ -116,8 +117,9 @@ void SpectrumData::onSpeLoaded(
 
   m_xMin = *std::min_element(m_xData.begin(), m_xData.end());
   m_xMax = *std::max_element(m_xData.begin(), m_xData.end());
-  m_yMin = *std::min_element(m_yData.begin(), m_yData.end());
-  m_yMax = *std::max_element(m_yData.begin(), m_yData.end());
+  const auto yMinMax = simdstats::findMinMax(m_yData.data(), m_yData.size());
+  m_yMin = yMinMax.min;
+  m_yMax = yMinMax.max;
 
   m_fileName = m_pendingFileName;
   emit dataChanged();
@@ -203,15 +205,10 @@ void SpectrumData::decimate(const std::vector<double> &freqs,
     for (size_t i = 0; i < freqs.size(); i += bucket_size) {
       size_t end = std::min(i + bucket_size, freqs.size());
 
-      auto min_it =
-          std::min_element(intensities.begin() + i, intensities.begin() + end);
-      auto max_it =
-          std::max_element(intensities.begin() + i, intensities.begin() + end);
-
-      size_t min_idx =
-          static_cast<size_t>(std::distance(intensities.begin(), min_it));
-      size_t max_idx =
-          static_cast<size_t>(std::distance(intensities.begin(), max_it));
+      const auto bucketMinMax =
+          simdstats::findMinMaxIndex(intensities.data() + i, end - i);
+      const size_t min_idx = i + bucketMinMax.minIndex;
+      const size_t max_idx = i + bucketMinMax.maxIndex;
 
       if (min_idx < max_idx) {
         m_xData.push_back(freqs[min_idx]);

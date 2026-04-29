@@ -18,7 +18,8 @@ void ViewportModel::setDataBounds(double xMin, double xMax) {
     m_dataXMin = std::min(m_dataXMin, xMin);
     m_dataXMax = std::max(m_dataXMax, xMax);
     clampView();
-    clampCursor();
+    clampSpectrumCursor();
+    clampCatalogCursor();
     emit viewChanged();
     emit cursorChanged();
   }
@@ -32,7 +33,9 @@ void ViewportModel::clearDataBounds() {
 void ViewportModel::updateFromBounds() {
   m_viewXMin = m_dataXMin;
   m_viewXMax = m_dataXMax;
-  m_cursorX = (m_dataXMin + m_dataXMax) * 0.5;
+  const double center = (m_dataXMin + m_dataXMax) * 0.5;
+  m_spectrumCursorX = center;
+  m_catalogCursorX = center;
   emit viewChanged();
   emit cursorChanged();
 }
@@ -42,7 +45,9 @@ void ViewportModel::resetView() {
     return;
   m_viewXMin = m_dataXMin;
   m_viewXMax = m_dataXMax;
-  m_cursorX = (m_dataXMin + m_dataXMax) * 0.5;
+  const double center = (m_dataXMin + m_dataXMax) * 0.5;
+  m_spectrumCursorX = center;
+  m_catalogCursorX = center;
   emit viewChanged();
   emit cursorChanged();
 }
@@ -75,11 +80,18 @@ void ViewportModel::clampView() {
   }
 }
 
-void ViewportModel::clampCursor() {
-  if (m_cursorX < m_viewXMin)
-    m_cursorX = m_viewXMin;
-  if (m_cursorX > m_viewXMax)
-    m_cursorX = m_viewXMax;
+void ViewportModel::clampSpectrumCursor() {
+  if (m_spectrumCursorX < m_viewXMin)
+    m_spectrumCursorX = m_viewXMin;
+  if (m_spectrumCursorX > m_viewXMax)
+    m_spectrumCursorX = m_viewXMax;
+}
+
+void ViewportModel::clampCatalogCursor() {
+  if (m_catalogCursorX < m_viewXMin)
+    m_catalogCursorX = m_viewXMin;
+  if (m_catalogCursorX > m_viewXMax)
+    m_catalogCursorX = m_viewXMax;
 }
 
 void ViewportModel::panX(double delta) {
@@ -96,41 +108,54 @@ void ViewportModel::zoomX(double factor) {
   if (!m_hasData || factor <= 0.0)
     return;
   double halfRange = (m_viewXMax - m_viewXMin) / (2.0 * factor);
-  m_viewXMin = m_cursorX - halfRange;
-  m_viewXMax = m_cursorX + halfRange;
+  m_viewXMin = m_catalogCursorX - halfRange;
+  m_viewXMax = m_catalogCursorX + halfRange;
   clampView();
   emit viewChanged();
 }
 
-void ViewportModel::moveCursor(int pixelDelta, double plotWidth) {
+void ViewportModel::moveSpectrumCursor(int pixelDelta, double plotWidth) {
+  if (!m_hasData || plotWidth <= 0)
+    return;
+
+  const double xRange = m_viewXMax - m_viewXMin;
+  const double pixelSize = xRange / plotWidth;
+  m_spectrumCursorX += pixelDelta * pixelSize;
+
+  clampSpectrumCursor();
+
+  emit cursorChanged();
+}
+
+void ViewportModel::moveCatalogCursor(int pixelDelta, double plotWidth) {
   if (!m_hasData || plotWidth <= 0)
     return;
 
   double xRange = m_viewXMax - m_viewXMin;
   double pixelSize = xRange / plotWidth;
-  m_cursorX += pixelDelta * pixelSize;
+  m_catalogCursorX += pixelDelta * pixelSize;
   if (m_snapToCatalog && m_catalogData && m_catalogData->hasData() &&
       pixelDelta != 0) {
     const auto &records = m_catalogData->records();
     if (pixelDelta > 0) {
       auto it = std::lower_bound(
-          records.begin(), records.end(), m_cursorX,
+          records.begin(), records.end(), m_catalogCursorX,
           [](const pickett::CatRecord &r, double val) { return r.freq < val; });
       if (it != records.end()) {
-        double pixelDist = (it->freq - m_cursorX) / pixelSize;
+        double pixelDist = (it->freq - m_catalogCursorX) / pixelSize;
         if (pixelDist >= 0 && pixelDist <= m_snapPixelDistance) {
-          m_cursorX = it->freq;
+          m_catalogCursorX = it->freq;
         }
       }
     } else {
       auto it = std::upper_bound(
-          records.begin(), records.end(), m_cursorX,
+          records.begin(), records.end(), m_catalogCursorX,
           [](double val, const pickett::CatRecord &r) { return val < r.freq; });
       if (it != records.begin()) {
         it = std::prev(it);
-        double pixelDist = (m_cursorX - it->freq) / pixelSize;
+        double pixelDist = (m_catalogCursorX - it->freq) / pixelSize;
         if (pixelDist >= 0 && pixelDist <= m_snapPixelDistance) {
-          m_cursorX = it->freq;
+          m_catalogCursorX = it->freq;
         }
       }
     }
@@ -139,21 +164,24 @@ void ViewportModel::moveCursor(int pixelDelta, double plotWidth) {
   bool panned = false;
   double panAmount = xRange;
 
-  if (m_cursorX < m_viewXMin) {
+  if (m_catalogCursorX < m_viewXMin) {
     m_viewXMin -= panAmount;
     m_viewXMax -= panAmount;
     clampView();
-    m_cursorX = m_viewXMax;
+    m_catalogCursorX = m_viewXMax;
     panned = true;
-  } else if (m_cursorX > m_viewXMax) {
+  } else if (m_catalogCursorX > m_viewXMax) {
     m_viewXMin += panAmount;
     m_viewXMax += panAmount;
     clampView();
-    m_cursorX = m_viewXMin;
+    m_catalogCursorX = m_viewXMin;
     panned = true;
   } else {
-    clampCursor();
+    clampCatalogCursor();
   }
+
+  // Catalog cursor is the anchor cursor: moving it also moves spectrum cursor.
+  m_spectrumCursorX = m_catalogCursorX;
 
   emit cursorChanged();
   if (panned)
@@ -263,7 +291,7 @@ QVariantMap ViewportModel::lineAtPixel(double pixel, double plotWidth) {
 
     double xRange = m_viewXMax - m_viewXMin;
     double pixelFreq = xRange / plotWidth;
-    double cursorFreq = m_viewXMin + (pixel / plotWidth) * xRange;
+  double cursorFreq = m_catalogCursorX;
     double startFreq = cursorFreq - pixelFreq * 0.5;
     double endFreq = cursorFreq + pixelFreq * 0.5;
 
@@ -353,5 +381,3 @@ void ViewportModel::cycleLineUp() {
   }
   emit cursorChanged();
 }
-
-

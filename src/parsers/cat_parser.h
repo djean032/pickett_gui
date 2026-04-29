@@ -3,6 +3,7 @@
 
 #include <expected>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -56,7 +57,7 @@ public:
 private:
   // Decode 2-char quantum number string to integer
   // Returns error message if malformed, empty string on success
-  static std::pair<int, std::string> decode_qn(const std::string &s);
+  static std::pair<int, std::string> decode_qn(std::string_view s);
 };
 
 } // namespace pickett

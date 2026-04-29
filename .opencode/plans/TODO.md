@@ -30,13 +30,53 @@
 
 ### Performance Improvements
 
+#### Parser Throughput
+- [x] Optimize CAT parser hot path (reduce allocations, faster numeric parsing)
+- [x] Add CAT parser benchmark target (`bench_cat_parser`) and record baseline throughput
+- [ ] Validate CAT parser benchmark on x86 hardware and compare against ARM results
+- [ ] Reduce parser/service/model data copying for CAT and SPE load paths
+  - Avoid redundant transforms between parser records, service DTOs, and model storage
+  - Target lower peak memory and faster end-to-end file load latency
+
+Benchmark notes (for x86 follow-up):
+- Configure/build benchmark in Release mode:
+  - `cmake -S . -B build-bench-release -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON`
+  - `cmake --build build-bench-release --target bench_cat_parser`
+- Run benchmark:
+  - `./build-bench-release/bench_cat_parser`
+
+#### UI/Render Performance
+- [ ] Add per-record metadata cache for catalog readout
+  - Cache lightweight numeric metadata for all records (no full per-line `QVariantList`/string blobs)
+  - Materialize Qt readout objects on demand (or with small LRU window)
+  - Reduce cursor/readout allocation churn in `ViewportModel::lineAtPixel`
+- [ ] Replace `std::map` grouping in catalog rendering with fixed small bucket grouping
+  - Group by vibrational/state index using contiguous buckets when range is compact
+  - Keep deterministic ordering and map fallback for pathological sparse/wide ranges
+- [ ] Reuse scenegraph geometry buffers in plot items
+  - Minimize per-frame geometry/material churn in spectrum and catalog plot rendering
+  - Target smoother interaction and lower CPU/GPU driver overhead during pan/zoom
+
+#### Responsiveness
+- [ ] Add async request supersession/cancellation for file loads
+  - Stop expensive stale parse jobs when newer requests supersede them
+  - Prevent wasted background CPU for rapid repeated load actions
+
 #### SIMD Processing
-- [ ] Add SIMD intrinsics for intensity data processing (min/max, filtering, statistics)
-- [ ] Target: SSE/AVX2 on x86, NEON on ARM
+- [x] Add SIMD intrinsics for intensity data processing (min/max, filtering, statistics)
+- [ ] Validate x86 SIMD paths (SSE2/AVX2) on x86 hardware and compare benchmark results
+- [x] Target: SSE/AVX2 on x86, NEON on ARM
 - [ ] Focus areas:
-  - Finding min/max values in intensity arrays
+  - [x] Finding min/max values in intensity arrays
   - Applying filters or transformations
   - Statistical calculations (mean, variance)
+
+Benchmark notes (for x86 follow-up):
+- Configure/build benchmark in Release mode:
+  - `cmake -S . -B build-bench-release -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON`
+  - `cmake --build build-bench-release --target bench_simd_stats`
+- Run benchmark:
+  - `./build-bench-release/bench_simd_stats`
 
 ### Testing Improvements
 

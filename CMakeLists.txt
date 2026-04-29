@@ -47,6 +47,8 @@ qt_add_qml_module(pickett-gui
     SOURCES
         src/models/spectrumdata.cpp
         src/models/spectrumdata.h
+        src/models/simd_stats.cpp
+        src/models/simd_stats.h
         src/models/viewportmodel.cpp
         src/models/viewportmodel.h
         src/models/catalogdata.cpp
@@ -104,12 +106,18 @@ if(PICKETT_BUILD_TESTS)
         tests/test_spe_parser.cpp
         tests/test_spectral_file_service.cpp
         tests/test_model_error_state.cpp
+        tests/test_viewportmodel.cpp
+        tests/test_simd_stats.cpp
         src/services/spectralfileservice.cpp
         src/services/spectralfileservice.h
         src/models/spectrumdata.cpp
         src/models/spectrumdata.h
+        src/models/simd_stats.cpp
+        src/models/simd_stats.h
         src/models/catalogdata.cpp
         src/models/catalogdata.h
+        src/models/viewportmodel.cpp
+        src/models/viewportmodel.h
     )
     
     target_link_libraries(test_parsers PRIVATE
@@ -125,4 +133,24 @@ if(PICKETT_BUILD_TESTS)
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(Catch)
     catch_discover_tests(test_parsers)
+
+    # Lightweight SIMD benchmark executable (manual run)
+    add_executable(bench_simd_stats
+        tests/bench_simd_stats.cpp
+        src/models/simd_stats.cpp
+        src/models/simd_stats.h
+    )
+
+    target_include_directories(bench_simd_stats PRIVATE src)
+
+    add_executable(bench_cat_parser
+        tests/bench_cat_parser.cpp
+        src/parsers/cat_parser.cpp
+        src/parsers/cat_parser.h
+        src/parsers/utils.cpp
+        src/parsers/utils.h
+    )
+
+    target_include_directories(bench_cat_parser PRIVATE src)
+    target_compile_definitions(bench_cat_parser PRIVATE TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test_data")
 endif()

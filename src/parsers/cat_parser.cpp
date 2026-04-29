@@ -1,7 +1,12 @@
 #include "cat_parser.h"
 #include "utils.h"
+
+#include <charconv>
+#include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <limits>
+#include <string_view>
 
 namespace pickett {
 
@@ -44,6 +49,56 @@ constexpr char QN_POS_PREFIX_MAX = 'Z';
 constexpr int QN_ALPHA_OFFSET = 1;
 constexpr int QN_TENS_MULTIPLIER = 10;
 constexpr int QN_POS_BASE_TENS_OFFSET = 9;
+
+std::string_view trim_view(std::string_view s) {
+  size_t start = 0;
+  while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start]))) {
+    ++start;
+  }
+
+  size_t end = s.size();
+  while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1]))) {
+    --end;
+  }
+
+  return s.substr(start, end - start);
+}
+
+std::pair<int, std::string> parse_int_field(std::string_view s) {
+  const std::string_view trimmed = trim_view(s);
+  if (trimmed.empty()) {
+    return {0, "Empty string"};
+  }
+
+  int value = 0;
+  const auto *begin = trimmed.data();
+  const auto *end = trimmed.data() + trimmed.size();
+  const auto [ptr, ec] = std::from_chars(begin, end, value);
+  if (ec == std::errc{} && ptr == end) {
+    return {value, ""};
+  }
+
+  return parse_int_safe(std::string(trimmed));
+}
+
+std::pair<double, std::string> parse_double_field(std::string_view s) {
+  const std::string_view trimmed = trim_view(s);
+  if (trimmed.empty()) {
+    return {0.0, "Empty string"};
+  }
+
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+  double value = 0.0;
+  const auto *begin = trimmed.data();
+  const auto *end = trimmed.data() + trimmed.size();
+  const auto [ptr, ec] = std::from_chars(begin, end, value);
+  if (ec == std::errc{} && ptr == end) {
+    return {value, ""};
+  }
+#endif
+
+  return parse_double_safe(std::string(trimmed));
+}
 } // namespace
 
 // All known QFMT codes and their labels (from spinv.txt documentation)
@@ -101,7 +156,7 @@ QNFormat CatParser::decode_qnfmt(int qnfmt) {
   };
 }
 
-std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {
+std::pair<int, std::string> CatParser::decode_qn(std::string_view s) {
   if (s.size() != QN_STR_SIZE) {
     return {0, "QN field must be exactly 2 characters"};
   }
@@ -146,7 +201,7 @@ std::pair<int, std::string> CatParser::decode_qn(const std::string &s) {
 
   // Regular number: use safe int parsing
   // stoi handles leading spaces correctly (e.g., " 4" → 4)
-  auto result = parse_int_safe(s);
+  auto result = parse_int_safe(std::string(s));
   return result;
 }
 
@@ -162,6 +217,16 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
   int line_num = 0;
   bool has_valid_qnfmt = false;
   int detected_qnfmt = -1;
+
+  std::error_code fileSizeErr;
+  const auto fileSize = std::filesystem::file_size(filepath, fileSizeErr);
+  if (!fileSizeErr) {
+    const size_t estimatedLines = static_cast<size_t>(fileSize / 80);
+    if (estimatedLines > 0) {
+      result.records.reserve(estimatedLines);
+      result.errors.reserve(estimatedLines / 16);
+    }
+  }
 
   while (std::getline(file, line)) {
     line_num++;
@@ -184,69 +249,85 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
     }
 
     CatRecord record;
-    std::vector<std::string> line_errors;
+    bool lineHasError = false;
 
     // Parse fixed-width fields
     // FREQ: positions 0-12 (13 chars)
-    auto freq_result = parse_double_safe(line.substr(FREQ_START, FREQ_WIDTH));
+    auto freq_result = parse_double_field(
+        std::string_view(line).substr(FREQ_START, FREQ_WIDTH));
     if (!freq_result.second.empty()) {
-      line_errors.push_back("FREQ: " + freq_result.second);
+      result.errors.push_back({line_num, "FREQ: " + freq_result.second});
+      lineHasError = true;
     } else {
       record.freq = freq_result.first;
     }
 
     // ERR: positions 13-20 (8 chars)
-    auto err_result = parse_double_safe(line.substr(ERR_START, ERR_WIDTH));
+    auto err_result =
+        parse_double_field(std::string_view(line).substr(ERR_START, ERR_WIDTH));
     if (!err_result.second.empty()) {
-      line_errors.push_back("ERR: " + err_result.second);
+      result.errors.push_back({line_num, "ERR: " + err_result.second});
+      lineHasError = true;
     } else {
       record.err = err_result.first;
     }
 
     // LGINT: positions 21-28 (8 chars)
-    auto lgint_result = parse_double_safe(line.substr(LGINT_START, LGINT_WIDTH));
+    auto lgint_result = parse_double_field(
+        std::string_view(line).substr(LGINT_START, LGINT_WIDTH));
     if (!lgint_result.second.empty()) {
-      line_errors.push_back("LGINT: " + lgint_result.second);
+      result.errors.push_back({line_num, "LGINT: " + lgint_result.second});
+      lineHasError = true;
     } else {
       record.lgint = lgint_result.first;
     }
 
     // DR: positions 29-30 (2 chars)
-    auto dr_result = parse_int_safe(line.substr(DR_START, DR_WIDTH));
+    auto dr_result =
+        parse_int_field(std::string_view(line).substr(DR_START, DR_WIDTH));
     if (!dr_result.second.empty()) {
-      line_errors.push_back("DR: " + dr_result.second);
+      result.errors.push_back({line_num, "DR: " + dr_result.second});
+      lineHasError = true;
     } else {
       record.dr = dr_result.first;
     }
 
     // ELO: positions 31-40 (10 chars)
-    auto elo_result = parse_double_safe(line.substr(ELO_START, ELO_WIDTH));
+    auto elo_result =
+        parse_double_field(std::string_view(line).substr(ELO_START, ELO_WIDTH));
     if (!elo_result.second.empty()) {
-      line_errors.push_back("ELO: " + elo_result.second);
+      result.errors.push_back({line_num, "ELO: " + elo_result.second});
+      lineHasError = true;
     } else {
       record.elo = elo_result.first;
     }
 
     // GUP: positions 41-43 (3 chars)
-    auto gup_result = parse_int_safe(line.substr(GUP_START, GUP_WIDTH));
+    auto gup_result =
+        parse_int_field(std::string_view(line).substr(GUP_START, GUP_WIDTH));
     if (!gup_result.second.empty()) {
-      line_errors.push_back("GUP: " + gup_result.second);
+      result.errors.push_back({line_num, "GUP: " + gup_result.second});
+      lineHasError = true;
     } else {
       record.gup = gup_result.first;
     }
 
     // TAG: positions 44-50 (7 chars)
-    auto tag_result = parse_int_safe(line.substr(TAG_START, TAG_WIDTH));
+    auto tag_result =
+        parse_int_field(std::string_view(line).substr(TAG_START, TAG_WIDTH));
     if (!tag_result.second.empty()) {
-      line_errors.push_back("TAG: " + tag_result.second);
+      result.errors.push_back({line_num, "TAG: " + tag_result.second});
+      lineHasError = true;
     } else {
       record.tag = tag_result.first;
     }
 
     // QNFMT: positions 51-54 (4 chars)
-    auto qnfmt_result = parse_int_safe(line.substr(QNFMT_START, QNFMT_WIDTH));
+    auto qnfmt_result =
+        parse_int_field(std::string_view(line).substr(QNFMT_START, QNFMT_WIDTH));
     if (!qnfmt_result.second.empty()) {
-      line_errors.push_back("QNFMT: " + qnfmt_result.second);
+      result.errors.push_back({line_num, "QNFMT: " + qnfmt_result.second});
+      lineHasError = true;
     } else {
       record.qnfmt = qnfmt_result.first;
 
@@ -262,29 +343,31 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
         has_valid_qnfmt = true;
       } else if (record.qnfmt != detected_qnfmt) {
         // Inconsistent QFMT - error
-        line_errors.push_back("Inconsistent QFMT: expected " +
-                              std::to_string(detected_qnfmt) + ", got " +
-                              std::to_string(record.qnfmt));
+        result.errors.push_back({line_num,
+                                 "Inconsistent QFMT: expected " +
+                                     std::to_string(detected_qnfmt) + ", got " +
+                                     std::to_string(record.qnfmt)});
+        lineHasError = true;
       }
     }
 
     // QN: positions 55-78 (24 chars = 12×2)
-    std::string qn_field = line.substr(QN_FIELD_START, QN_FIELD_WIDTH);
+    const std::string_view qn_field =
+        std::string_view(line).substr(QN_FIELD_START, QN_FIELD_WIDTH);
     for (size_t i = 0; i < QN_COUNT; ++i) {
-      std::string qn_str = qn_field.substr(i * QN_TOKEN_WIDTH, QN_TOKEN_WIDTH);
+      const std::string_view qn_str =
+          qn_field.substr(i * QN_TOKEN_WIDTH, QN_TOKEN_WIDTH);
       auto qn_result = decode_qn(qn_str);
       if (!qn_result.second.empty()) {
-        line_errors.push_back("QN[" + std::to_string(i) +
-                              "]: " + qn_result.second);
+        result.errors.push_back(
+            {line_num, "QN[" + std::to_string(i) + "]: " + qn_result.second});
+        lineHasError = true;
       }
       record.qn[i] = qn_result.first;
     }
 
     // If there were any errors on this line, log them and skip the line
-    if (!line_errors.empty()) {
-      for (const auto &err : line_errors) {
-        result.errors.push_back({line_num, err});
-      }
+    if (lineHasError) {
       continue;
     }
 

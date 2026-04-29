@@ -11,7 +11,8 @@ class ViewportModel : public QObject {
   Q_OBJECT
   Q_PROPERTY(double viewXMin READ viewXMin NOTIFY viewChanged)
   Q_PROPERTY(double viewXMax READ viewXMax NOTIFY viewChanged)
-  Q_PROPERTY(double cursorX READ cursorX NOTIFY cursorChanged)
+  Q_PROPERTY(double spectrumCursorX READ spectrumCursorX NOTIFY cursorChanged)
+  Q_PROPERTY(double catalogCursorX READ catalogCursorX NOTIFY cursorChanged)
   Q_PROPERTY(bool hasData READ hasData NOTIFY hasDataChanged)
   Q_PROPERTY(QVariantList xTickPositions READ xTickPositions NOTIFY viewChanged)
   Q_PROPERTY(
@@ -28,7 +29,8 @@ public:
 
   double viewXMin() const { return m_viewXMin; }
   double viewXMax() const { return m_viewXMax; }
-  double cursorX() const { return m_cursorX; }
+  double spectrumCursorX() const { return m_spectrumCursorX; }
+  double catalogCursorX() const { return m_catalogCursorX; }
   bool hasData() const { return m_hasData; }
   CatalogData *catalogData() const { return m_catalogData; }
   void setCatalogData(CatalogData *data);
@@ -42,7 +44,8 @@ public:
   Q_INVOKABLE void resetView();
   Q_INVOKABLE void panX(double delta);
   Q_INVOKABLE void zoomX(double factor);
-  Q_INVOKABLE void moveCursor(int pixelDelta, double plotWidth);
+  Q_INVOKABLE void moveSpectrumCursor(int pixelDelta, double plotWidth);
+  Q_INVOKABLE void moveCatalogCursor(int pixelDelta, double plotWidth);
   Q_INVOKABLE QVariantMap lineAtPixel(double pixel, double plotWidth);
   Q_INVOKABLE void cycleLineUp();
   Q_INVOKABLE void cycleLineDown();
@@ -60,7 +63,8 @@ signals:
 private:
   double m_viewXMin = 0.0;
   double m_viewXMax = 0.0;
-  double m_cursorX = 0.0;
+  double m_spectrumCursorX = 0.0;
+  double m_catalogCursorX = 0.0;
   double m_dataXMin = 0.0;
   double m_dataXMax = 0.0;
   bool m_hasData = false;
@@ -72,7 +76,8 @@ private:
   int m_currentPixelLineIndex = 0;
 
   void clampView();
-  void clampCursor();
+  void clampSpectrumCursor();
+  void clampCatalogCursor();
   void updateFromBounds();
 };
 

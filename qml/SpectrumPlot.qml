@@ -70,21 +70,25 @@ FocusScope {
                     
                     property var lineInfo: {
                         if (!viewport.hasData) return {};
-                        var pixel = (viewport.cursorX - viewport.viewXMin) / 
+                        var pixel = (viewport.catalogCursorX - viewport.viewXMin) / 
                                    (viewport.viewXMax - viewport.viewXMin) * plotItem.width;
                         return viewport.lineAtPixel(pixel, plotItem.width);
                     }
                     
                     text: {
+                        var spectrumFreq = viewport.spectrumCursorX.toFixed(4);
+                        var catalogFreq = viewport.catalogCursorX.toFixed(4);
+                        var cursorLine = "Spectrum Cursor: " + spectrumFreq +
+                                " MHz | Catalog Cursor: " + catalogFreq + " MHz";
                         if (!lineInfo.found) {
-                            return "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz";
+                            return cursorLine + "\nCatalog Line: none near cursor";
                         }
                         var prefix = "";
                         if (lineInfo.totalLines > 1) {
-                            prefix = "Line " + (lineInfo.lineIndex + 1) + "/" + 
-                                     lineInfo.totalLines + " | " + "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz" + " | ";
+                            prefix = "Catalog Line: " + (lineInfo.lineIndex + 1) + "/" + 
+                                     lineInfo.totalLines + " | ";
                         } else {
-                            prefix = "Current Frequency: " + viewport.cursorX.toFixed(2) + " MHz" + " | ";
+                            prefix = "Catalog Line: 1/1 | ";
                         }
 
                         var upper = "";
@@ -101,9 +105,10 @@ FocusScope {
                                 lower += lineInfo.lowerLabels[j] + ": " + lineInfo.lowerQN[j];
                             }
                         }
-                        return prefix + "Predicted Freq: " + lineInfo.freq.toFixed(4) + " MHz\n" +
-                               "Upper: " + upper + "\nLower: " + lower + "\n" +
-                               "Int: " + lineInfo.lgint.toFixed(4);
+                        return cursorLine + "\n" +
+                               prefix + "Predicted Freq: " + lineInfo.freq.toFixed(4) + " MHz | " +
+                               "Int: " + lineInfo.lgint.toFixed(4) + "\n" +
+                               "Upper: " + upper + "\nLower: " + lower;
                     }
                     }
                   }
@@ -144,7 +149,7 @@ FocusScope {
                         x: {
                             var range = viewport.viewXMax - viewport.viewXMin;
                             if (range <= 0 || parent.width <= 0) return 0;
-                            return (viewport.cursorX - viewport.viewXMin) / range * parent.width;
+                            return (viewport.spectrumCursorX - viewport.viewXMin) / range * parent.width;
                         }
                     }
 
@@ -254,7 +259,7 @@ FocusScope {
                         x: {
                             var range = viewport.viewXMax - viewport.viewXMin;
                             if (range <= 0 || parent.width <= 0) return 0;
-                            return (viewport.cursorX - viewport.viewXMin) / range * parent.width;
+                            return (viewport.catalogCursorX - viewport.viewXMin) / range * parent.width;
                         }
                     }
 
@@ -373,11 +378,27 @@ FocusScope {
             event.accepted = true;
             break;
         case Qt.Key_K:
-            viewport.moveCursor(-cursorStep, plotItem.width);
+            viewport.moveCatalogCursor(-cursorStep, plotItem.width);
             event.accepted = true;
             break;
         case Qt.Key_L:
-            viewport.moveCursor(cursorStep, plotItem.width);
+            viewport.moveCatalogCursor(cursorStep, plotItem.width);
+            event.accepted = true;
+            break;
+        case Qt.Key_Comma:
+            viewport.moveSpectrumCursor(-cursorStep, plotItem.width);
+            event.accepted = true;
+            break;
+        case Qt.Key_Less:
+            viewport.moveSpectrumCursor(-cursorStep, plotItem.width);
+            event.accepted = true;
+            break;
+        case Qt.Key_Period:
+            viewport.moveSpectrumCursor(cursorStep, plotItem.width);
+            event.accepted = true;
+            break;
+        case Qt.Key_Greater:
+            viewport.moveSpectrumCursor(cursorStep, plotItem.width);
             event.accepted = true;
             break;
         case Qt.Key_0:
