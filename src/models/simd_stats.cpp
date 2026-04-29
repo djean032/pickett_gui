@@ -178,4 +178,16 @@ MinMaxIndex findMinMaxIndex(const double *data, size_t n) {
           static_cast<size_t>(std::distance(begin, maxIt))};
 }
 
+const char *backendName() {
+#if defined(__AVX2__)
+  return "AVX2";
+#elif defined(__SSE2__)
+  return "SSE2";
+#elif defined(__aarch64__) || defined(__ARM_NEON)
+  return "NEON";
+#else
+  return "Scalar";
+#endif
+}
+
 } // namespace simdstats

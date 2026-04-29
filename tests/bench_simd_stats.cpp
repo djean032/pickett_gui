@@ -90,6 +90,7 @@ int main() {
   std::mt19937_64 rng(0xBADC0FFEEULL);
 
   std::cout << "SIMD min/max benchmark (avg ns per call)\n";
+  std::cout << "backend: " << simdstats::backendName() << "\n";
   std::cout << "array_size    scalar_ns/call   simd_ns/call   speedup\n";
 
   runCase(1024, 30000, rng);

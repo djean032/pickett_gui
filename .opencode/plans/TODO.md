@@ -33,7 +33,7 @@
 #### Parser Throughput
 - [x] Optimize CAT parser hot path (reduce allocations, faster numeric parsing)
 - [x] Add CAT parser benchmark target (`bench_cat_parser`) and record baseline throughput
-- [ ] Validate CAT parser benchmark on x86 hardware and compare against ARM results
+- [x] Validate CAT parser benchmark on x86 hardware and compare against ARM results
 - [ ] Reduce parser/service/model data copying for CAT and SPE load paths
   - Avoid redundant transforms between parser records, service DTOs, and model storage
   - Target lower peak memory and faster end-to-end file load latency
@@ -44,6 +44,11 @@ Benchmark notes (for x86 follow-up):
   - `cmake --build build-bench-release --target bench_cat_parser`
 - Run benchmark:
   - `./build-bench-release/bench_cat_parser`
+- 2026-04-29 x86_64 (WinLibs GCC 15.2.0, Qt 6.8.2 MinGW kit, Release):
+  - records: 588,792; iterations: 5
+  - avg parse time: 487.06 ms
+  - throughput: 1,208,871 records/s
+  - ARM comparison: pending baseline source
 
 #### UI/Render Performance
 - [ ] Add per-record metadata cache for catalog readout
@@ -64,7 +69,7 @@ Benchmark notes (for x86 follow-up):
 
 #### SIMD Processing
 - [x] Add SIMD intrinsics for intensity data processing (min/max, filtering, statistics)
-- [ ] Validate x86 SIMD paths (SSE2/AVX2) on x86 hardware and compare benchmark results
+- [x] Validate x86 SIMD paths (SSE2/AVX2) on x86 hardware and compare benchmark results
 - [x] Target: SSE/AVX2 on x86, NEON on ARM
 - [ ] Focus areas:
   - [x] Finding min/max values in intensity arrays
@@ -77,6 +82,17 @@ Benchmark notes (for x86 follow-up):
   - `cmake --build build-bench-release --target bench_simd_stats`
 - Run benchmark:
   - `./build-bench-release/bench_simd_stats`
+- 2026-04-29 x86_64 default Release build (backend: SSE2):
+  - 1024: scalar 896.13 ns, simd 427.03 ns, 2.10x
+  - 16384: scalar 15585.17 ns, simd 7342.43 ns, 2.12x
+  - 262144: scalar 247860.57 ns, simd 120768.57 ns, 2.05x
+  - 1048576: scalar 1080410.56 ns, simd 530082.22 ns, 2.04x
+- 2026-04-29 x86_64 AVX2 Release build (`-mavx2`, backend: AVX2):
+  - 1024: scalar 934.98 ns, simd 209.59 ns, 4.46x
+  - 16384: scalar 15061.12 ns, simd 3556.05 ns, 4.24x
+  - 262144: scalar 246930.29 ns, simd 64522.86 ns, 3.83x
+  - 1048576: scalar 1217303.33 ns, simd 310315.56 ns, 3.92x
+- ARM comparison: pending baseline source
 
 ### Testing Improvements
 

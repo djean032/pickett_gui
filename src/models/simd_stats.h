@@ -19,6 +19,7 @@ struct MinMaxIndex {
 
 MinMax findMinMax(const double *data, size_t n);
 MinMaxIndex findMinMaxIndex(const double *data, size_t n);
+const char *backendName();
 
 } // namespace simdstats
 
