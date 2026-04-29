@@ -80,8 +80,20 @@ Benchmark notes (for x86 follow-up):
 - Configure/build benchmark in Release mode:
   - `cmake -S . -B build-bench-release -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON`
   - `cmake --build build-bench-release --target bench_simd_stats`
+- Configure/build AVX2 benchmark build (without CMAKE_PREFIX_PATH):
+  - `cmake -S . -B build-avx2 -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER="C:/Users/dairen.jean/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin/g++.exe" -DCMAKE_CXX_FLAGS="-mavx2"`
+  - `cmake --build build-avx2 --target bench_simd_stats`
+- Configure/build SSE2 benchmark build (without CMAKE_PREFIX_PATH):
+  - `cmake -S . -B build-sse2 -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER="C:/Users/dairen.jean/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin/g++.exe" -DCMAKE_CXX_FLAGS="-msse2"`
+  - `cmake --build build-sse2 --target bench_simd_stats`
+- Configure/build NEON benchmark build (ARM/aarch64 only, without CMAKE_PREFIX_PATH):
+  - `cmake -S . -B build-neon -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER="<your-aarch64-compiler>" -DCMAKE_CXX_FLAGS="-march=armv8-a+simd"`
+  - `cmake --build build-neon --target bench_simd_stats`
 - Run benchmark:
   - `./build-bench-release/bench_simd_stats`
+  - `./build-avx2/bench_simd_stats`
+  - `./build-sse2/bench_simd_stats`
+  - `./build-neon/bench_simd_stats`
 - 2026-04-29 x86_64 default Release build (backend: SSE2):
   - 1024: scalar 896.13 ns, simd 427.03 ns, 2.10x
   - 16384: scalar 15585.17 ns, simd 7342.43 ns, 2.12x
