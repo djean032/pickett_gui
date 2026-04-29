@@ -10,6 +10,24 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# SIMD backend selection for x86/ARM builds
+set(PICKETT_SIMD_BACKEND "AUTO" CACHE STRING "SIMD backend: AUTO, SSE2, AVX2, or NEON")
+set_property(CACHE PICKETT_SIMD_BACKEND PROPERTY STRINGS AUTO SSE2 AVX2 NEON)
+
+function(pickett_apply_simd_flags target_name)
+    if(PICKETT_SIMD_BACKEND STREQUAL "AUTO")
+        return()
+    elseif(PICKETT_SIMD_BACKEND STREQUAL "SSE2")
+        target_compile_options(${target_name} PRIVATE -msse2)
+    elseif(PICKETT_SIMD_BACKEND STREQUAL "AVX2")
+        target_compile_options(${target_name} PRIVATE -mavx2)
+    elseif(PICKETT_SIMD_BACKEND STREQUAL "NEON")
+        target_compile_options(${target_name} PRIVATE -march=armv8-a+simd)
+    else()
+        message(FATAL_ERROR "Invalid PICKETT_SIMD_BACKEND='${PICKETT_SIMD_BACKEND}'. Use AUTO, SSE2, AVX2, or NEON.")
+    endif()
+endfunction()
+
 # Qt6 - Quick module for QML UI
 find_package(Qt6 REQUIRED COMPONENTS Quick Concurrent)
 
@@ -66,6 +84,7 @@ target_link_libraries(pickett-gui PRIVATE
     Qt6::Quick
     Qt6::Concurrent
 )
+pickett_apply_simd_flags(pickett-gui)
 
 set_target_properties(pickett-gui PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER com.example.picket_gui
@@ -126,6 +145,7 @@ if(PICKETT_BUILD_TESTS)
         Qt6::Core
         Qt6::Concurrent
     )
+    pickett_apply_simd_flags(test_parsers)
     target_compile_definitions(test_parsers PRIVATE TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test_data")
     
     # Automatic test registration with CTest
@@ -142,6 +162,7 @@ if(PICKETT_BUILD_TESTS)
     )
 
     target_include_directories(bench_simd_stats PRIVATE src)
+    pickett_apply_simd_flags(bench_simd_stats)
 
     add_executable(bench_cat_parser
         tests/bench_cat_parser.cpp
