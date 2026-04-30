@@ -9,7 +9,7 @@
 
 namespace pickett {
 
-bool ParParser::is_valid_chr(char c) {
+bool ParParser::isValidChr(char c) {
   return c == 'a' || c == 'g' || c == 's';
 }
 
@@ -66,7 +66,7 @@ bool ParParser::parse_option_line(const std::string &line, ParOptionLine &opt,
   pos++;
 
   // Validate CHR on first line only
-  if (is_first_line && !is_valid_chr(opt.chr)) {
+  if (is_first_line && !isValidChr(opt.chr)) {
     error = std::string("Invalid CHR value: ") + opt.chr +
             " (must be 'a', 'g', or 's')";
     return false;
@@ -245,7 +245,7 @@ bool ParParser::parse_parameter_line(const std::string &line,
   return true;
 }
 
-ParParseExpected ParParser::parse_file(const std::string &filepath) {
+ParParseExpected ParParser::parseFile(const std::string &filepath) {
   ParParseResult result;
   std::ifstream file(filepath);
 
@@ -380,14 +380,14 @@ ParParseExpected ParParser::parse_file(const std::string &filepath) {
 }
 
 // Encode CHR field - determine from options or default to 'g'
-char ParParser::encode_chr(const std::vector<ParOptionLine> &options) {
+char ParParser::encodeChr(const std::vector<ParOptionLine> &options) {
   // Default to 'g' (ground state)
   char chr = 'g';
 
   // Check first option line for CHR value
   if (!options.empty()) {
     char first_chr = options[0].chr;
-    if (is_valid_chr(first_chr)) {
+    if (isValidChr(first_chr)) {
       chr = first_chr;
     }
   }
@@ -422,7 +422,7 @@ bool ParParser::write(std::ostream &os, const ParParseResult &data,
 
     // Option line(s)
     if (!data.options.empty()) {
-      char chr = encode_chr(data.options);
+      char chr = encodeChr(data.options);
       const auto &opt = data.options[0];
 
       // Format: CHR SPINO NVIB [comma-separated optional values]
@@ -511,8 +511,8 @@ bool ParParser::write(std::ostream &os, const ParParseResult &data,
   }
 }
 
-bool ParParser::write_file(const std::string &filepath,
-                           const ParParseResult &data, std::string &error) {
+bool ParParser::writeFile(const std::string &filepath,
+                          const ParParseResult &data, std::string &error) {
   std::ofstream file(filepath);
   if (!file.is_open()) {
     error = "Failed to open file for writing: " + filepath;

@@ -43,7 +43,7 @@ SpeHeader::SpeHeader()
   std::memset(scansp, 0, sizeof(scansp));
 }
 
-SpeParseExpected SpeParser::parse_file(const std::string &filepath) {
+SpeParseExpected SpeParser::parseFile(const std::string &filepath) {
 
   std::ifstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
@@ -68,10 +68,10 @@ SpeParseExpected SpeParser::parse_file(const std::string &filepath) {
   }
   file.close();
 
-  return parse_buffer(buffer);
+  return parseBuffer(buffer);
 }
 
-SpeParseExpected SpeParser::parse_buffer(const std::vector<uint8_t> &buffer) {
+SpeParseExpected SpeParser::parseBuffer(const std::vector<uint8_t> &buffer) {
   SpeParseResult result;
 
   if (buffer.size() < SPE_MIN_FILE_SIZE) {

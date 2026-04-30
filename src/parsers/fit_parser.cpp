@@ -98,7 +98,7 @@ static bool extract_double_after_pattern(const std::string &line,
   }
 }
 
-FitParseExpected FitParser::parse_file(const std::string &filepath) {
+FitParseExpected FitParser::parseFile(const std::string &filepath) {
   FitParseResult result;
   std::ifstream file(filepath);
 

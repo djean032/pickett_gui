@@ -21,7 +21,7 @@ constexpr int LIN_SCIENTIFIC_SIG_FIGS = 2;
 constexpr int LIN_FIXED_PRECISION = 6;
 } // namespace
 
-LinParseExpected LinParser::parse_file(const std::string &filepath) {
+LinParseExpected LinParser::parseFile(const std::string &filepath) {
   LinParseResult result;
   std::ifstream file(filepath);
 
@@ -228,8 +228,8 @@ bool LinParser::write(std::ostream &os, const LinParseResult &data,
   }
 }
 
-bool LinParser::write_file(const std::string &filepath,
-                           const LinParseResult &data, std::string &error) {
+bool LinParser::writeFile(const std::string &filepath,
+                          const LinParseResult &data, std::string &error) {
   std::ofstream file(filepath);
   if (!file.is_open()) {
     error = "Failed to open file for writing: " + filepath;

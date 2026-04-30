@@ -83,7 +83,7 @@ using FitParseExpected = std::expected<FitParseResult, FitParseErrors>;
 
 class FitParser {
 public:
-  static FitParseExpected parse_file(const std::string &filepath);
+  static FitParseExpected parseFile(const std::string &filepath);
 
 private:
   static bool

@@ -26,8 +26,8 @@ int pow10_int(int digits) {
 }
 } // namespace
 
-void IntParser::decode_flags(int flags, int &irflg, int &outflg, int &strflg,
-                             int &egyflg) {
+void IntParser::decodeFlags(int flags, int &irflg, int &outflg, int &strflg,
+                            int &egyflg) {
   irflg = flags / FLAGS_THOUSANDS;
   flags %= FLAGS_THOUSANDS;
   outflg = flags / FLAGS_HUNDREDS;
@@ -36,7 +36,7 @@ void IntParser::decode_flags(int flags, int &irflg, int &outflg, int &strflg,
   egyflg = flags % FLAGS_TENS;
 }
 
-IDIPInfo IntParser::decode_idip(int idip, int nvib_digits) {
+IDIPInfo IntParser::decodeIdip(int idip, int nvib_digits) {
   IDIPInfo info;
   int v_mod = pow10_int(nvib_digits);
 
@@ -62,8 +62,8 @@ IDIPInfo IntParser::decode_idip(int idip, int nvib_digits) {
   return info;
 }
 
-IDIPInfo IntDipole::get_idip_info(int nvib_digits) const {
-  return IntParser::decode_idip(idip, nvib_digits);
+IDIPInfo IntDipole::getIdipInfo(int nvib_digits) const {
+  return IntParser::decodeIdip(idip, nvib_digits);
 }
 
 bool IntParser::parse_header_line(const std::string &line, IntHeader &header,
@@ -77,8 +77,8 @@ bool IntParser::parse_header_line(const std::string &line, IntHeader &header,
   }
 
   // Decode flags into components
-  decode_flags(header.flags, header.irflg, header.outflg, header.strflg,
-               header.egyflg);
+  decodeFlags(header.flags, header.irflg, header.outflg, header.strflg,
+              header.egyflg);
 
   // Parse TAG
   if (!(iss >> header.tag)) {
@@ -168,7 +168,7 @@ bool IntParser::parse_dipole_line(const std::string &line, IntDipole &dipole,
   return true;
 }
 
-IntParseExpected IntParser::parse_file(const std::string &filepath) {
+IntParseExpected IntParser::parseFile(const std::string &filepath) {
   IntParseResult result;
   std::ifstream file(filepath);
 
@@ -240,10 +240,10 @@ IntParseExpected IntParser::parse_file(const std::string &filepath) {
 }
 
 // Encode IDIP from components
-int IntParser::encode_idip(const IDIPInfo &info, int nvib_digits) {
+int IntParser::encodeIdip(const IDIPInfo &info, int nvib_digits) {
   int v_mod = pow10_int(nvib_digits);
 
-  // Build IDIP from components (reverse of decode_idip)
+  // Build IDIP from components (reverse of decodeIdip)
   // Order: FC, TYP, I1, V2, V1, SYM
   int idip = info.fc;
   idip = idip * DECIMAL_BASE + info.typ;
@@ -322,8 +322,8 @@ bool IntParser::write(std::ostream &os, const IntParseResult &data,
   }
 }
 
-bool IntParser::write_file(const std::string &filepath,
-                           const IntParseResult &data, std::string &error) {
+bool IntParser::writeFile(const std::string &filepath,
+                          const IntParseResult &data, std::string &error) {
   std::ofstream file(filepath);
   if (!file.is_open()) {
     error = "Failed to open file for writing: " + filepath;

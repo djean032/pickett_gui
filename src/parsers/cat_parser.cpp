@@ -121,7 +121,7 @@ static const std::vector<std::string> QFMT_LABELS_14 = {
     "N", "Ka", "Kc", "v", "J", "F"}; // Asymmetric top with spins (6)
 // Additional codes from documentation can be added here
 
-std::vector<std::string> CatParser::get_qn_labels(int qnfmt) {
+std::vector<std::string> CatParser::getQnLabels(int qnfmt) {
   int q = qnfmt / QNFMT_Q_DIVISOR;
   switch (q) {
   case 0:
@@ -147,7 +147,7 @@ std::vector<std::string> CatParser::get_qn_labels(int qnfmt) {
   }
 }
 
-QNFormat CatParser::decode_qnfmt(int qnfmt) {
+QNFormat CatParser::decodeQnfmt(int qnfmt) {
   return {
       qnfmt / QNFMT_Q_DIVISOR,                  // Q: base format code
       (qnfmt / QNFMT_H_DIVISOR) % QNFMT_H_MOD, // H: half-integer flags
@@ -205,7 +205,7 @@ std::pair<int, std::string> CatParser::decode_qn(std::string_view s) {
   return result;
 }
 
-CatParseExpected CatParser::parse_file(const std::string &filepath) {
+CatParseExpected CatParser::parseFile(const std::string &filepath) {
   CatParseResult result;
   std::ifstream file(filepath);
 
@@ -334,7 +334,7 @@ CatParseExpected CatParser::parse_file(const std::string &filepath) {
       // Check QFMT validity on first line
       if (detected_qnfmt == -1) {
         detected_qnfmt = record.qnfmt;
-        auto labels = get_qn_labels(record.qnfmt);
+        auto labels = getQnLabels(record.qnfmt);
         if (labels.empty()) {
           // Unknown QFMT - this is an error on first line
           return std::unexpected(CatParseErrors{

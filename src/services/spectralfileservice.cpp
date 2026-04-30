@@ -297,7 +297,7 @@ SpectralFileService::loadSpe(const QString &filePath) const {
   }
 
   const auto parsed =
-      pickett::SpeParser::parse_file(result.sourcePath.toStdString());
+      pickett::SpeParser::parseFile(result.sourcePath.toStdString());
   if (!parsed.has_value()) {
     appendParserErrors(parsed.error(), result.errors, Domain::Spe,
                        result.sourcePath, false);
@@ -349,7 +349,7 @@ SpectralFileService::loadCat(const QString &filePath) const {
   }
 
   const auto parsed =
-      pickett::CatParser::parse_file(result.sourcePath.toStdString());
+      pickett::CatParser::parseFile(result.sourcePath.toStdString());
   if (!parsed.has_value()) {
     appendParserErrors(parsed.error(), result.errors, Domain::Cat,
                        result.sourcePath, false);
@@ -405,7 +405,7 @@ SpectralFileService::loadLin(const QString &filePath) const {
   }
 
   const auto parsed =
-      pickett::LinParser::parse_file(result.sourcePath.toStdString());
+      pickett::LinParser::parseFile(result.sourcePath.toStdString());
   if (!parsed.has_value()) {
     appendParserErrors(parsed.error(), result.errors, Domain::Lin,
                        result.sourcePath, false);

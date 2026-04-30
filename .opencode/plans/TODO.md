@@ -130,6 +130,14 @@ Benchmark notes (for x86 follow-up):
 
 ### Code Quality & Maintainability
 
+#### Naming Consistency
+- [ ] Migrate legacy parser/public API names from snake_case to camelCase
+  - [x] Inventory all snake_case symbols in `src/parsers`, models, and tests
+    - See `.opencode/plans/snake_case_inventory.md`
+  - Rename with compatibility plan (temporary wrappers or coordinated updates)
+  - Update all call sites and tests
+  - Document final naming policy in `AGENTS.md`
+
 #### Documentation
 - [ ] Add Doxygen-style comments for all public APIs
 - [ ] Document complex algorithms and data structures

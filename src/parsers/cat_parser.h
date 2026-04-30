@@ -45,14 +45,14 @@ struct QNFormat {
 class CatParser {
 public:
   // Parse .cat file, returns result with records and any errors
-  static CatParseExpected parse_file(const std::string &filepath);
+  static CatParseExpected parseFile(const std::string &filepath);
 
   // Decode QNFMT into components
-  static QNFormat decode_qnfmt(int qnfmt);
+  static QNFormat decodeQnfmt(int qnfmt);
 
   // Get text labels for quantum numbers based on QFMT code
   // Returns fixed set regardless of actual values (zeros will be apparent)
-  static std::vector<std::string> get_qn_labels(int qnfmt);
+  static std::vector<std::string> getQnLabels(int qnfmt);
 
 private:
   // Decode 2-char quantum number string to integer

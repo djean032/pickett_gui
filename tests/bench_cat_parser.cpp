@@ -14,7 +14,7 @@ double runOne(const std::string &path, int iterations) {
   size_t totalRecords = 0;
   const auto start = Clock::now();
   for (int i = 0; i < iterations; ++i) {
-    const auto parsed = pickett::CatParser::parse_file(path);
+    const auto parsed = pickett::CatParser::parseFile(path);
     if (!parsed.has_value()) {
       std::cerr << "Parse failed at iteration " << i << "\n";
       std::exit(1);
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     path = argv[1];
   }
 
-  const auto warmup = pickett::CatParser::parse_file(path);
+  const auto warmup = pickett::CatParser::parseFile(path);
   if (!warmup.has_value()) {
     std::cerr << "Warmup parse failed\n";
     return 1;

@@ -63,19 +63,19 @@ using ParParseExpected = std::expected<ParParseResult, ParParseErrors>;
 
 class ParParser {
 public:
-  static ParParseExpected parse_file(const std::string &filepath);
+  static ParParseExpected parseFile(const std::string &filepath);
 
   // Write .par file from parsed data
   static bool write(std::ostream &os, const ParParseResult &data,
                     std::string &error);
-  static bool write_file(const std::string &filepath,
-                         const ParParseResult &data, std::string &error);
+  static bool writeFile(const std::string &filepath,
+                        const ParParseResult &data, std::string &error);
 
   // Validate CHR field
-  static bool is_valid_chr(char c);
+  static bool isValidChr(char c);
 
   // Encode CHR field ('a', 'g', or 's')
-  static char encode_chr(const std::vector<ParOptionLine> &options);
+  static char encodeChr(const std::vector<ParOptionLine> &options);
 
 private:
   static bool parse_header_line(const std::string &line, ParHeader &header,

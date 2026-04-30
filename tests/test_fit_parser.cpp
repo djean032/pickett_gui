@@ -15,7 +15,7 @@ std::string get_test_data_path(const std::string &filename) {
 
 TEST_CASE("Fit parser header parsing", "[fit]") {
   SECTION("Parse actual fit file header") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     REQUIRE(result->errors.empty());
@@ -32,7 +32,7 @@ TEST_CASE("Fit parser header parsing", "[fit]") {
 
 TEST_CASE("Fit parser parameter parsing", "[fit]") {
   SECTION("Parse first few parameters") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     REQUIRE(result->parameters.size() == 207);
@@ -58,7 +58,7 @@ TEST_CASE("Fit parser parameter parsing", "[fit]") {
 
 TEST_CASE("Fit parser line record parsing", "[fit]") {
   SECTION("Parse line records including blends") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     REQUIRE(result->lines.size() > 0);
@@ -112,7 +112,7 @@ TEST_CASE("Fit parser line record parsing", "[fit]") {
 
 TEST_CASE("Fit parser correlation matrix parsing", "[fit]") {
   SECTION("Parse correlation matrix") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     
@@ -140,7 +140,7 @@ TEST_CASE("Fit parser correlation matrix parsing", "[fit]") {
 
 TEST_CASE("Fit parser integration - full file", "[fit]") {
   SECTION("Parse complete fit file and validate counts") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     
@@ -164,7 +164,7 @@ TEST_CASE("Fit parser integration - full file", "[fit]") {
 
 TEST_CASE("Fit parser error handling", "[fit]") {
   SECTION("Non-existent file") {
-    auto result = FitParser::parse_file("nonexistent.fit");
+    auto result = FitParser::parseFile("nonexistent.fit");
     
     CHECK(!result.has_value());
     CHECK(!result.error().empty());
@@ -174,7 +174,7 @@ TEST_CASE("Fit parser error handling", "[fit]") {
 
 TEST_CASE("Fit parser parameter IDPAR values", "[fit]") {
   SECTION("Verify IDPAR values are stored correctly") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     REQUIRE(result->parameters.size() == 207);
@@ -197,7 +197,7 @@ TEST_CASE("Fit parser parameter IDPAR values", "[fit]") {
 
 TEST_CASE("Fit parser blend detection", "[fit]") {
   SECTION("Count blend groups and components") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     
@@ -230,7 +230,7 @@ TEST_CASE("Fit parser blend detection", "[fit]") {
 
 TEST_CASE("Fit parser updated parameters", "[fit]") {
   SECTION("Parse updated parameters from cyanomethcycloprop.fit NEW PARAMETER section") {
-    auto result = FitParser::parse_file(get_test_data_path("cyanomethcycloprop.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("cyanomethcycloprop.fit"));
     
     REQUIRE(result.has_value());
     
@@ -261,7 +261,7 @@ TEST_CASE("Fit parser updated parameters", "[fit]") {
   }
   
   SECTION("Parse CH3CN_gs.fit file") {
-    auto result = FitParser::parse_file(get_test_data_path("CH3CN_gs.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("CH3CN_gs.fit"));
     
     REQUIRE(result.has_value());
     
@@ -323,7 +323,7 @@ TEST_CASE("Fit parser updated parameters", "[fit]") {
 
 TEST_CASE("Fit parser rejected lines parsing", "[fit]") {
   SECTION("Parse rejected_lines_fit.fit file with rejected lines") {
-    auto result = FitParser::parse_file(get_test_data_path("rejected_lines_fit.fit"));
+    auto result = FitParser::parseFile(get_test_data_path("rejected_lines_fit.fit"));
     
     REQUIRE(result.has_value());
     REQUIRE(result->errors.empty());

@@ -7,7 +7,7 @@
 using namespace pickett;
 
 TEST_CASE("ParParser parses actual test file", "[par_parser]") {
-    auto result = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
+    auto result = ParParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
     
     INFO("Success: " << result.has_value());
     INFO("Title: " << result->header.title);
@@ -33,7 +33,7 @@ TEST_CASE("ParParser validates CHR field", "[par_parser]") {
         f << "x   1   18  ,    ,  , ,    ,     ,     ,     ,    ,,,,\n";  // Invalid CHR 'x'
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     
     // Should have an error about invalid CHR
     bool found_chr_error = false;
@@ -48,13 +48,13 @@ TEST_CASE("ParParser validates CHR field", "[par_parser]") {
     std::remove(test_file.c_str());
 }
 
-TEST_CASE("ParParser is_valid_chr", "[par_parser]") {
-    CHECK(ParParser::is_valid_chr('a'));
-    CHECK(ParParser::is_valid_chr('g'));
-    CHECK(ParParser::is_valid_chr('s'));
-    CHECK(!ParParser::is_valid_chr('x'));
-    CHECK(!ParParser::is_valid_chr('A'));
-    CHECK(!ParParser::is_valid_chr('1'));
+TEST_CASE("ParParser isValidChr", "[par_parser]") {
+    CHECK(ParParser::isValidChr('a'));
+    CHECK(ParParser::isValidChr('g'));
+    CHECK(ParParser::isValidChr('s'));
+    CHECK(!ParParser::isValidChr('x'));
+    CHECK(!ParParser::isValidChr('A'));
+    CHECK(!ParParser::isValidChr('1'));
 }
 
 TEST_CASE("ParParser warns on parameter count mismatch", "[par_parser]") {
@@ -68,7 +68,7 @@ TEST_CASE("ParParser warns on parameter count mismatch", "[par_parser]") {
         f << "2000000  2.0  0.2 /B\n";  // Only 2 params, not 5
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     CHECK(result->parameters.size() == 2);
     
@@ -97,7 +97,7 @@ TEST_CASE("ParParser skips comment lines", "[par_parser]") {
         f << "2000000  2.0  0.2 /B\n";
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     CHECK(result->parameters.size() == 2);
     
@@ -114,7 +114,7 @@ TEST_CASE("ParParser handles missing erpar", "[par_parser]") {
         f << "1000000  1.0 /A\n";  // Missing erpar
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->parameters.size() == 1);
     CHECK(result->parameters[0].par == 1.0);
@@ -125,7 +125,7 @@ TEST_CASE("ParParser handles missing erpar", "[par_parser]") {
 }
 
 TEST_CASE("ParParser handles file not found", "[par_parser]") {
-    auto result = ParParser::parse_file("nonexistent_file.par");
+    auto result = ParParser::parseFile("nonexistent_file.par");
     
     CHECK(!result.has_value());
     REQUIRE(!result.error().empty());
@@ -142,7 +142,7 @@ TEST_CASE("ParParser extracts header fields correctly", "[par_parser]") {
         f << "1000000  1.0  0.1 /A\n";
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     CHECK(result->header.title == "Test Molecule Title");
     CHECK(result->header.npar == 900);
@@ -167,7 +167,7 @@ TEST_CASE("ParParser extracts option fields correctly", "[par_parser]") {
         f << "1000000  1.0  0.1 /A\n";
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->options.size() == 1);
     
@@ -199,7 +199,7 @@ TEST_CASE("ParParser handles optional values correctly", "[par_parser]") {
         f << "1000000  1.0  0.1 /A\n";
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->options.size() == 1);
     
@@ -224,7 +224,7 @@ TEST_CASE("ParParser extracts parameter with label", "[par_parser]") {
         f << "1000000  7.780559263257653E+003  1.00000000E-037 /A_gs\n";
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->parameters.size() == 1);
     
@@ -248,7 +248,7 @@ TEST_CASE("ParParser handles negative IDPAR", "[par_parser]") {
         f << "-1000000  1.5  0.1 /Constrained\n";  // Negative = constrained ratio
     }
     
-    auto result = ParParser::parse_file(test_file);
+    auto result = ParParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->parameters.size() == 2);
     CHECK(result->parameters[0].idpar == 1000000);
@@ -258,7 +258,7 @@ TEST_CASE("ParParser handles negative IDPAR", "[par_parser]") {
 }
 
 TEST_CASE("ParParser handles Watson S set CHR", "[par_parser]") {
-    auto result = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/diethylether.par");
+    auto result = ParParser::parseFile(std::string(TEST_DATA_DIR) + "/diethylether.par");
     
     INFO("Success: " << result.has_value());
     INFO("Title: " << result->header.title);
@@ -281,18 +281,18 @@ TEST_CASE("ParParser handles Watson S set CHR", "[par_parser]") {
 
 TEST_CASE("ParParser write roundtrip with SPFIT", "[par_parser]") {
     // Parse original PAR file
-    auto original = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
+    auto original = ParParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
     REQUIRE(original.has_value());
     REQUIRE(original->parameters.size() > 0);
     
     // Write to _bak.par file
     std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.par";
     std::string error;
-    bool write_ok = ParParser::write_file(bak_file, original.value(), error);
+    bool write_ok = ParParser::writeFile(bak_file, original.value(), error);
     CHECK(write_ok);
     
     // Parse the written file and verify it matches
-    auto roundtrip = ParParser::parse_file(bak_file);
+    auto roundtrip = ParParser::parseFile(bak_file);
     CHECK(roundtrip.has_value());
     REQUIRE(roundtrip.has_value());
     CHECK(roundtrip->parameters.size() == original->parameters.size());
@@ -308,18 +308,18 @@ TEST_CASE("ParParser write roundtrip with SPFIT", "[par_parser]") {
 
 TEST_CASE("ParParser comprehensive data roundtrip", "[par_parser]") {
     // Parse original PAR file
-    auto original = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
+    auto original = ParParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.par");
     REQUIRE(original.has_value());
     REQUIRE(original->parameters.size() > 0);
     
     // Write to _bak.par file
     std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.par";
     std::string error;
-    bool write_ok = ParParser::write_file(bak_file, original.value(), error);
+    bool write_ok = ParParser::writeFile(bak_file, original.value(), error);
     CHECK(write_ok);
     
     // Parse the written file
-    auto roundtrip = ParParser::parse_file(bak_file);
+    auto roundtrip = ParParser::parseFile(bak_file);
     CHECK(roundtrip.has_value());
     REQUIRE(roundtrip.has_value());
     

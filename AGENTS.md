@@ -30,10 +30,14 @@ rm -rf build build-debug build-tests
 ### Clang Format
 ```bash
 # Format all C++ files according to .clang-format
-find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | xargs clang-format -i
+find . \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+  -not -path "./build/*" -not -path "./build-debug/*" -not -path "./build-tests/*" \
+  | xargs clang-format -i
 
 # Check formatting without modifying files
-find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | xargs clang-format --dry-run --Werror
+find . \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+  -not -path "./build/*" -not -path "./build-debug/*" -not -path "./build-tests/*" \
+  | xargs clang-format --dry-run --Werror
 ```
 
 ## Test Commands
@@ -41,7 +45,7 @@ find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" | xargs clang-format --dry-
 ### Running All Tests
 ```bash
 # With CTest (when tests are enabled in build)
-cd build-tests && ctest --output-on-failure
+ctest --test-dir build-tests --output-on-failure
 
 # Or run test executable directly
 ./build-tests/test_parsers
@@ -59,8 +63,25 @@ cd build-tests && ctest --output-on-failure
 ./build-tests/test_parsers -v "[spe]"
 ```
 
-### Available Test Executables
-- `test_parsers` - Contains all parser tests (SPE, PAR, LIN, INT, FIT, CAT)
+### Available Test/Benchmark Executables
+- `test_parsers` - Parser and model/service unit tests (SPE, PAR, LIN, INT, FIT, CAT, model/service)
+- `bench_simd_stats` - Manual SIMD performance benchmark
+- `bench_cat_parser` - Manual CAT parser throughput benchmark
+
+### SIMD Backend Selection (optional)
+```bash
+# Default backend auto-detection
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPICKETT_SIMD_BACKEND=AUTO
+
+# Force AVX2 on x86
+cmake -S . -B build-avx2 -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DPICKETT_SIMD_BACKEND=AVX2
+
+# Force SSE2 on x86
+cmake -S . -B build-sse2 -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DPICKETT_SIMD_BACKEND=SSE2
+
+# Force NEON on ARM/aarch64
+cmake -S . -B build-neon -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON -DPICKETT_SIMD_BACKEND=NEON
+```
 
 ## Code Style Guidelines
 
@@ -80,7 +101,8 @@ cd build-tests && ctest --output-on-failure
 
 ### Naming Conventions
 - Classes and structs: PascalCase (e.g., `SpeParser`, `SpectrumData`)
-- Functions and methods: camelCase (e.g., `parse_file()`, `get_fstart_mhz()`)
+- Functions and methods: prefer camelCase for new code (e.g., `parseBuffer()`, `filePath()`)
+- Legacy parser APIs may remain snake_case when preserving compatibility (e.g., `parse_file()`, `get_fstart_mhz()`)
 - Variables: camelCase (e.g., `npts`, `intensities`)
 - Constants and enums: UPPER_SNAKE_CASE (e.g., `MAX_BUFFER_SIZE`)
 - Member variables: camelCase with `m_` prefix (e.g., `m_npts`)

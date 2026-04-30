@@ -341,7 +341,7 @@ QVariantMap ViewportModel::lineAtPixel(double pixel, double plotWidth) {
     }
 
     // Get labels for this QNFMT, only take first 'nqn' per state
-    auto labels = pickett::CatParser::get_qn_labels(rec.qnfmt);
+    auto labels = pickett::CatParser::getQnLabels(rec.qnfmt);
     for (int i = 0; i < nqn && i < labels.size(); ++i) {
         upperLabels.append(QString::fromStdString(labels[i] + "'"));
     }

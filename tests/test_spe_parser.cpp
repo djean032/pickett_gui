@@ -16,7 +16,7 @@ static std::string get_test_data_path(const std::string &filename) {
 
 TEST_CASE("Spectral file parser", "[spe]") {
   SECTION("Parse cyanomethylenecyclopropane_235-500GHz_bin.spe") {
-    auto result = SpeParser::parse_file(
+    auto result = SpeParser::parseFile(
         get_test_data_path("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
 
     if (!result.has_value()) {
@@ -62,20 +62,20 @@ TEST_CASE("Spectral file parser", "[spe]") {
     CHECK(parsed.footer.ncalpt == 0);
 
     // Check computed properties (all in MHz)
-    CHECK_THAT(parsed.get_fstart_mhz(), WithinAbs(234839.325, 0.001));
-    CHECK_THAT(parsed.get_fend_mhz(), WithinAbs(499997.100, 0.001));
-    CHECK_THAT(parsed.get_span_mhz(), WithinAbs(265157.775, 0.001));
+    CHECK_THAT(parsed.fstartMHz(), WithinAbs(234839.325, 0.001));
+    CHECK_THAT(parsed.fendMHz(), WithinAbs(499997.100, 0.001));
+    CHECK_THAT(parsed.spanMHz(), WithinAbs(265157.775, 0.001));
   }
 
   SECTION("Frequency range validation") {
-    auto result = SpeParser::parse_file(
+    auto result = SpeParser::parseFile(
         get_test_data_path("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
 
     REQUIRE(result.has_value());
     const auto &parsed = result.value();
 
     // Validate frequency span matches filename (in MHz: 235-500 GHz = 265,000 MHz span)
-    double span_mhz = parsed.get_span_mhz();
+    double span_mhz = parsed.spanMHz();
     CHECK(span_mhz > 260000.0);  // Should be ~265,000 MHz
     CHECK(span_mhz < 270000.0);
 
@@ -89,7 +89,7 @@ TEST_CASE("Spectral file parser", "[spe]") {
   }
 
   SECTION("Intensity value range") {
-    auto result = SpeParser::parse_file(
+    auto result = SpeParser::parseFile(
         get_test_data_path("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
 
     REQUIRE(result.has_value());
@@ -115,7 +115,7 @@ TEST_CASE("Spectral file parser", "[spe]") {
   }
 
   SECTION("File not found error") {
-    auto result = SpeParser::parse_file("nonexistent_file.spe");
+    auto result = SpeParser::parseFile("nonexistent_file.spe");
 
     CHECK(!result.has_value());
     CHECK(!result.error().empty());
@@ -125,7 +125,7 @@ TEST_CASE("Spectral file parser", "[spe]") {
   SECTION("Too small file error") {
     // Create a minimal invalid buffer
     std::vector<uint8_t> tiny_buffer(10, 0);
-    auto result = SpeParser::parse_buffer(tiny_buffer);
+    auto result = SpeParser::parseBuffer(tiny_buffer);
 
     CHECK(!result.has_value());
     CHECK(!result.error().empty());

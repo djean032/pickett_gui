@@ -31,14 +31,14 @@ using LinParseExpected = std::expected<LinParseResult, LinParseErrors>;
 class LinParser {
 public:
   // Parse .lin file, returns result with records and any errors
-  static LinParseExpected parse_file(const std::string &filepath);
+  static LinParseExpected parseFile(const std::string &filepath);
 
   // Write .lin file from parsed data
   // Returns true on success, false on failure with error message
   static bool write(std::ostream &os, const LinParseResult &data,
                     std::string &error);
-  static bool write_file(const std::string &filepath,
-                         const LinParseResult &data, std::string &error);
+  static bool writeFile(const std::string &filepath,
+                        const LinParseResult &data, std::string &error);
 
 private:
   // Format quantum number in I3 format (3 chars, right-justified, space-padded)

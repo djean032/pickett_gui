@@ -54,10 +54,10 @@ struct SpeParseResult {
   std::vector<std::pair<int, std::string>> errors;
 
   // Computed properties (all frequencies in MHz)
-  double get_fstart_mhz() const { return footer.fstart; }
-  double get_fend_mhz() const { return footer.fend; }
-  double get_fincr_mhz() const { return footer.fincr; }
-  double get_span_mhz() const { return footer.fend - footer.fstart; }
+  double fstartMHz() const { return footer.fstart; }
+  double fendMHz() const { return footer.fend; }
+  double fincrMHz() const { return footer.fincr; }
+  double spanMHz() const { return footer.fend - footer.fstart; }
 
   SpeParseResult() : npts(0) {}
 };
@@ -68,10 +68,10 @@ using SpeParseExpected = std::expected<SpeParseResult, SpeParseErrors>;
 class SpeParser {
 public:
   // Parse a binary spectral file
-  static SpeParseExpected parse_file(const std::string &filepath);
+  static SpeParseExpected parseFile(const std::string &filepath);
 
   // Parse from memory buffer (for testing or embedded data)
-  static SpeParseExpected parse_buffer(const std::vector<uint8_t> &buffer);
+  static SpeParseExpected parseBuffer(const std::vector<uint8_t> &buffer);
 
 private:
   static bool parse_header(const std::vector<uint8_t> &data, SpeHeader &header,

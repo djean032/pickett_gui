@@ -46,7 +46,7 @@ struct IntDipole {
   IntDipole() : idip(0), dipole(0.0) {}
 
   // Decode on demand with nvib context (1, 2, or 3 digits)
-  IDIPInfo get_idip_info(int nvib_digits) const;
+  IDIPInfo getIdipInfo(int nvibDigits) const;
 };
 
 struct IntParseResult {
@@ -60,23 +60,23 @@ using IntParseExpected = std::expected<IntParseResult, IntParseErrors>;
 
 class IntParser {
 public:
-  static IntParseExpected parse_file(const std::string &filepath);
+  static IntParseExpected parseFile(const std::string &filepath);
 
   // Write .int file from parsed data
   static bool write(std::ostream &os, const IntParseResult &data,
                     std::string &error);
-  static bool write_file(const std::string &filepath,
-                         const IntParseResult &data, std::string &error);
+  static bool writeFile(const std::string &filepath,
+                        const IntParseResult &data, std::string &error);
 
   // FLAGS = IRFLG*1000 + OUTFLG*100 + STRFLG*10 + EGYFLG
-  static void decode_flags(int flags, int &irflg, int &outflg, int &strflg,
-                           int &egyflg);
+  static void decodeFlags(int flags, int &irflg, int &outflg, int &strflg,
+                          int &egyflg);
 
   // Decode IDIP with nvib_digits (1, 2, or 3) from par file
-  static IDIPInfo decode_idip(int idip, int nvib_digits);
+  static IDIPInfo decodeIdip(int idip, int nvibDigits);
 
   // Encode IDIP from components
-  static int encode_idip(const IDIPInfo &info, int nvib_digits);
+  static int encodeIdip(const IDIPInfo &info, int nvibDigits);
 
 private:
   static bool parse_header_line(const std::string &line, IntHeader &header,

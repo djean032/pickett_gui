@@ -15,7 +15,7 @@ TEST_CASE("CatParser decodes alphabetic QN values correctly", "[cat_parser]") {
     
     // A0 should decode to 100
     {
-        auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+        auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
         REQUIRE(result.has_value());
         REQUIRE(!result->records.empty());
         
@@ -39,7 +39,7 @@ TEST_CASE("CatParser decodes alphabetic QN values correctly", "[cat_parser]") {
 
 TEST_CASE("CatParser QN decoding algorithm", "[cat_parser]") {
     // Test the internal decode logic by parsing a file and checking specific values
-    auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+    auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     REQUIRE(result.has_value());
     
     // First record: QN should have reasonable values
@@ -57,14 +57,14 @@ TEST_CASE("CatParser QN decoding algorithm", "[cat_parser]") {
 }
 
 TEST_CASE("CatParser decodes QNFMT correctly", "[cat_parser]") {
-    auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+    auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     REQUIRE(result.has_value());
     
     if (!result->records.empty()) {
         int qnfmt = result->records[0].qnfmt;
         INFO("Detected QNFMT: " << qnfmt);
         
-        auto format = CatParser::decode_qnfmt(qnfmt);
+        auto format = CatParser::decodeQnfmt(qnfmt);
         INFO("Q=" << format.q << ", H=" << format.h << ", NQN=" << format.nqn);
         
         // Check all records have same QNFMT
@@ -76,7 +76,7 @@ TEST_CASE("CatParser decodes QNFMT correctly", "[cat_parser]") {
 
 TEST_CASE("CatParser returns correct QN labels for known QFMT codes", "[cat_parser]") {
     // Test QFMT = 1404 (Q=14, H=0, NQN=4)
-    auto labels = CatParser::get_qn_labels(1404);
+    auto labels = CatParser::getQnLabels(1404);
     REQUIRE(!labels.empty());
     
     // QFMT 14 is asymmetric top with spins: N, Ka, Kc, v, J, F (6 values)
@@ -90,19 +90,19 @@ TEST_CASE("CatParser returns correct QN labels for known QFMT codes", "[cat_pars
 }
 
 TEST_CASE("CatParser returns empty labels for unknown QFMT", "[cat_parser]") {
-    auto labels = CatParser::get_qn_labels(9999);
+    auto labels = CatParser::getQnLabels(9999);
     CHECK(labels.empty());
 }
 
 TEST_CASE("CatParser handles file not found", "[cat_parser]") {
-    auto result = CatParser::parse_file("nonexistent_file.cat");
+    auto result = CatParser::parseFile("nonexistent_file.cat");
     CHECK(!result.has_value());
     REQUIRE(!result.error().empty());
     CHECK(result.error()[0].first == 0);  // Line 0 = file-level error
 }
 
 TEST_CASE("CatParser parses actual test file with many records", "[cat_parser]") {
-    auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+    auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     
     INFO("Success: " << result.has_value());
     INFO("Records parsed: " << (result.has_value() ? result->records.size() : 0));
@@ -127,7 +127,7 @@ TEST_CASE("CatParser parses actual test file with many records", "[cat_parser]")
 }
 
 TEST_CASE("CatParser verifies fixed-width field parsing", "[cat_parser]") {
-    auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+    auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     REQUIRE(result.has_value());
     
     if (!result->records.empty()) {
@@ -161,7 +161,7 @@ TEST_CASE("CatParser verifies fixed-width field parsing", "[cat_parser]") {
 TEST_CASE("CatParser detects inconsistent QFMT as error", "[cat_parser]") {
     // This would require manually crafting a test file
     // For now, just verify the mechanism works by checking all records match first
-    auto result = CatParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
+    auto result = CatParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.cat");
     REQUIRE(result.has_value());
     
     if (result->records.size() > 1) {
@@ -200,7 +200,7 @@ TEST_CASE("CatParser decodes z9 and Z9 QN tokens", "[cat_parser]") {
         out << "\n";
     }
 
-    auto result = CatParser::parse_file(temp_path.string());
+    auto result = CatParser::parseFile(temp_path.string());
     REQUIRE(result.has_value());
     REQUIRE(result->errors.empty());
     REQUIRE(result->records.size() == 1);
@@ -237,7 +237,7 @@ TEST_CASE("CatParser decodes overflow marker QN token", "[cat_parser]") {
         out << "\n";
     }
 
-    auto result = CatParser::parse_file(temp_path.string());
+    auto result = CatParser::parseFile(temp_path.string());
     REQUIRE(result.has_value());
     REQUIRE(result->errors.empty());
     REQUIRE(result->records.size() == 1);

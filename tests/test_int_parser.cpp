@@ -8,7 +8,7 @@
 using namespace pickett;
 
 TEST_CASE("IntParser parses actual test file", "[int_parser]") {
-    auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto result = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
     INFO("Success: " << result.has_value());
     INFO("Title: " << result->header.title);
@@ -37,7 +37,7 @@ TEST_CASE("IntParser decodes header flags correctly", "[int_parser]") {
     int flags = 101;  // IRFLG=0, OUTFLG=1, STRFLG=0, EGYFLG=1
     int irflg, outflg, strflg, egyflg;
 
-    IntParser::decode_flags(flags, irflg, outflg, strflg, egyflg);
+    IntParser::decodeFlags(flags, irflg, outflg, strflg, egyflg);
 
     CHECK(irflg == 0);
     CHECK(outflg == 1);
@@ -54,7 +54,7 @@ TEST_CASE("IntParser decodes IDIP correctly", "[int_parser]") {
     int idip = 1011;
     int nvib_digits = 2;  // NVIB=18 > 9, so 2 digits
 
-    auto info = IntParser::decode_idip(idip, nvib_digits);
+    auto info = IntParser::decodeIdip(idip, nvib_digits);
 
     CHECK(info.fc == 0);
     CHECK(info.typ == 0);  // Basic dipole (not Herman-Wallis)
@@ -63,10 +63,10 @@ TEST_CASE("IntParser decodes IDIP correctly", "[int_parser]") {
     CHECK(info.v1 == 1);   // Both v1 and v2 are 1 (same vibrational state)
     CHECK(info.sym == 1);  // a-type
 
-    // Also test with IntDipole::get_idip_info()
+    // Also test with IntDipole::getIdipInfo()
     IntDipole dipole;
     dipole.idip = idip;
-    auto info2 = dipole.get_idip_info(nvib_digits);
+    auto info2 = dipole.getIdipInfo(nvib_digits);
 
     CHECK(info2.fc == 0);
     CHECK(info2.typ == 0);
@@ -80,7 +80,7 @@ TEST_CASE("IntParser handles negative IDIP", "[int_parser]") {
     int idip = -1011;
     int nvib_digits = 2;
 
-    auto info = IntParser::decode_idip(idip, nvib_digits);
+    auto info = IntParser::decodeIdip(idip, nvib_digits);
 
     // Values should be same as positive, just the sign indicates grouping
     CHECK(info.fc == 0);
@@ -92,7 +92,7 @@ TEST_CASE("IntParser handles negative IDIP", "[int_parser]") {
 }
 
 TEST_CASE("IntParser handles file not found", "[int_parser]") {
-    auto result = IntParser::parse_file("nonexistent_file.int");
+    auto result = IntParser::parseFile("nonexistent_file.int");
 
     CHECK(!result.has_value());
     REQUIRE(!result.error().empty());
@@ -100,7 +100,7 @@ TEST_CASE("IntParser handles file not found", "[int_parser]") {
 }
 
 TEST_CASE("IntParser extracts dipole labels", "[int_parser]") {
-    auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto result = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
     CHECK(result.has_value());
     REQUIRE(result->dipoles.size() >= 6);
@@ -116,7 +116,7 @@ TEST_CASE("IntParser extracts dipole labels", "[int_parser]") {
 
 TEST_CASE("IntParser integration with ParParser for nvib_digits", "[int_parser]") {
     // Load par file to get nvib context
-    auto par_result = ParParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.var");
+    auto par_result = ParParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.var");
     CHECK(par_result.has_value());
     REQUIRE(par_result.has_value());
     REQUIRE(!par_result->options.empty());
@@ -127,20 +127,20 @@ TEST_CASE("IntParser integration with ParParser for nvib_digits", "[int_parser]"
     CHECK(nvib_digits == 2);
 
     // Load int file
-    auto int_result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto int_result = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
     CHECK(int_result.has_value());
 
     // Check some IDIPs
     if (int_result->dipoles.size() > 5) {
         // IDIP 1: ground state, a-type (IDIP=1)
-        auto info0 = int_result->dipoles[0].get_idip_info(nvib_digits);
+        auto info0 = int_result->dipoles[0].getIdipInfo(nvib_digits);
         CHECK(info0.v1 == 0);
         CHECK(info0.v2 == 0);
         CHECK(info0.typ == 0);  // Basic dipole
         CHECK(info0.sym == 1);  // a-type
 
         // IDIP 1011: transition in v=1, a-type (decodes to v1=1, v2=1)
-        auto info3 = int_result->dipoles[3].get_idip_info(nvib_digits);
+        auto info3 = int_result->dipoles[3].getIdipInfo(nvib_digits);
         CHECK(info3.v1 == 1);   // Both v1 and v2 are 1 (same vibrational state)
         CHECK(info3.v2 == 1);
         CHECK(info3.typ == 0);  // Basic dipole
@@ -149,7 +149,7 @@ TEST_CASE("IntParser integration with ParParser for nvib_digits", "[int_parser]"
 }
 
 TEST_CASE("IntParser parses dipole values", "[int_parser]") {
-    auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto result = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
     CHECK(result.has_value());
 
@@ -169,7 +169,7 @@ TEST_CASE("IntParser parses dipole values", "[int_parser]") {
 }
 
 TEST_CASE("IntParser extracts header fields", "[int_parser]") {
-    auto result = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto result = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
 
     CHECK(result.has_value());
 
@@ -192,18 +192,18 @@ TEST_CASE("IntParser extracts header fields", "[int_parser]") {
 
 TEST_CASE("IntParser write roundtrip with SPCAT", "[int_parser]") {
     // Parse original INT file
-    auto original = IntParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
+    auto original = IntParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.int");
     REQUIRE(original.has_value());
     REQUIRE(original->dipoles.size() > 0);
     
     // Write to _bak.int file
     std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.int";
     std::string error;
-    bool write_ok = IntParser::write_file(bak_file, original.value(), error);
+    bool write_ok = IntParser::writeFile(bak_file, original.value(), error);
     CHECK(write_ok);
     
     // Parse the written file and verify it matches
-    auto roundtrip = IntParser::parse_file(bak_file);
+    auto roundtrip = IntParser::parseFile(bak_file);
     CHECK(roundtrip.has_value());
     REQUIRE(roundtrip.has_value());
     CHECK(roundtrip->dipoles.size() == original->dipoles.size());

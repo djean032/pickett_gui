@@ -18,7 +18,7 @@ TEST_CASE("LinParser parses valid record from test data", "[lin_parser]") {
         f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  2.50E-05\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 1);
     REQUIRE(result->errors.empty());
@@ -50,7 +50,7 @@ TEST_CASE("LinParser parses multiple records", "[lin_parser]") {
         f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 2);
     REQUIRE(result->errors.empty());
@@ -69,7 +69,7 @@ TEST_CASE("LinParser skips blank lines and comments", "[lin_parser]") {
         f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 2);
     REQUIRE(result->errors.empty());
@@ -86,7 +86,7 @@ TEST_CASE("LinParser handles empty file", "[lin_parser]") {
         f << "";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     CHECK(result->records.empty());
     CHECK(result->errors.empty());
@@ -102,7 +102,7 @@ TEST_CASE("LinParser handles file with only comments", "[lin_parser]") {
         f << "! Another comment\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     CHECK(result->records.empty());
     CHECK(result->errors.empty());
@@ -117,7 +117,7 @@ TEST_CASE("LinParser handles scientific notation", "[lin_parser]") {
         f << " 68  4 64  1 67  5 63  1  0  0  0  0   303733.727837     0.050000  1.99E-04\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 1);
     REQUIRE(result->errors.empty());
@@ -127,7 +127,7 @@ TEST_CASE("LinParser handles scientific notation", "[lin_parser]") {
 }
 
 TEST_CASE("LinParser parses actual test file", "[lin_parser]") {
-    auto result = LinParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
+    auto result = LinParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
     
     INFO("Success: " << result.has_value());
     INFO("Records: " << result->records.size());
@@ -153,7 +153,7 @@ TEST_CASE("LinParser parses actual test file", "[lin_parser]") {
 }
 
 TEST_CASE("LinParser returns error for non-existent file", "[lin_parser]") {
-    auto result = LinParser::parse_file("nonexistent_file.lin");
+    auto result = LinParser::parseFile("nonexistent_file.lin");
     
     CHECK(!result.has_value());
     REQUIRE(!result.error().empty());
@@ -167,7 +167,7 @@ TEST_CASE("LinParser parses all 12 quantum numbers correctly", "[lin_parser]") {
         f << "  1  2  3  4  5  6  7  8  9 10 11 12  100000.000000     0.010000  1.00E+00\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 1);
     REQUIRE(result->errors.empty());
@@ -188,7 +188,7 @@ TEST_CASE("LinParser handles negative quantum numbers", "[lin_parser]") {
         f << " -1 -2 -3 -4 -5 -6 -7 -8 -9-10-11-12  100000.000000     0.010000  1.00E+00\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 1);
     
@@ -208,7 +208,7 @@ TEST_CASE("LinParser reports line-level errors", "[lin_parser]") {
         f << " 71  0 71  1 70  0 70  1  0  0  0  0   303845.604135     0.050000  2.07E-04\n";
     }
     
-    auto result = LinParser::parse_file(test_file);
+    auto result = LinParser::parseFile(test_file);
     CHECK(result.has_value());
     REQUIRE(result->records.size() == 2);  // Skip bad line, get 2 good ones
     REQUIRE(result->errors.size() == 1);  // One error reported
@@ -219,18 +219,18 @@ TEST_CASE("LinParser reports line-level errors", "[lin_parser]") {
 
 TEST_CASE("LinParser write roundtrip with SPFIT", "[lin_parser]") {
     // Parse original LIN file
-    auto original = LinParser::parse_file(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
+    auto original = LinParser::parseFile(std::string(TEST_DATA_DIR) + "/cyanomethcycloprop.lin");
     REQUIRE(original.has_value());
     REQUIRE(original->records.size() > 0);
     
     // Write to _bak.lin file
     std::string bak_file = std::string(TEST_DATA_DIR) + "/cyanomethcycloprop_bak.lin";
     std::string error;
-    bool write_ok = LinParser::write_file(bak_file, original.value(), error);
+    bool write_ok = LinParser::writeFile(bak_file, original.value(), error);
     CHECK(write_ok);
     
     // Parse the written file and verify it matches
-    auto roundtrip = LinParser::parse_file(bak_file);
+    auto roundtrip = LinParser::parseFile(bak_file);
     CHECK(roundtrip.has_value());
     REQUIRE(roundtrip.has_value());
     CHECK(roundtrip->records.size() == original->records.size());
