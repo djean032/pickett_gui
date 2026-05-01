@@ -38,6 +38,28 @@
   - Avoid redundant transforms between parser records, service DTOs, and model storage
   - Target lower peak memory and faster end-to-end file load latency
 
+#### Native Cache Serialization
+- [ ] Add versioned sidecar cache format for CAT/SPE native payloads
+  - Header: magic, format version, record count/size, source size/mtime, checksum
+  - Payloads: CAT `std::vector<CatRecord>`; SPE footer frequencies + raw intensities
+- [ ] Implement CAT/SPE serialization + deserialization with safe fallback
+  - Cache hit path: load cache directly when fingerprint is valid
+  - Cache miss/invalid path: parse source and regenerate cache
+- [ ] Add cache roundtrip and corruption tests
+  - Roundtrip equality for CAT/SPE payloads
+  - Corrupt/invalid/truncated cache should fail cleanly and trigger parser fallback
+- [ ] Add service-layer integration tests for cache behavior
+  - First load creates cache, second load uses cache with output parity
+  - Source file metadata changes invalidate cache and force reparse
+
+#### Loomis-Wood Transition Classification (COLBEE-style)
+- [ ] Add derived CAT transition classification cache for fast filtering/highlighting
+  - dipole class (a/b/c/unknown), branch class (P/Q/R/other), and transition deltas
+- [ ] Compute classification once on CAT load and reuse during interaction
+- [ ] Add predicate-based transition filtering and continuity run extraction
+  - Support filters like dipole/branch/Ka''/frequency window/intensity
+  - Extract contiguous series by sorted `J''` continuity with configurable thresholds
+
 Benchmark notes (for x86 follow-up):
 - Configure/build benchmark in Release mode:
   - `cmake -S . -B build-bench-release -DCMAKE_BUILD_TYPE=Release -DPICKETT_BUILD_TESTS=ON`
