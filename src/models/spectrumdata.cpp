@@ -4,18 +4,48 @@
 #include "simd_stats.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 
 namespace {
 
+bool timingProbesEnabled() {
+  static const bool enabled = qEnvironmentVariableIntValue(
+                                  "PICKETT_TIMING_PROBES") > 0;
+  return enabled;
+}
+
+class ScopedTimingProbe {
+public:
+  explicit ScopedTimingProbe(QString label)
+      : m_label(std::move(label)), m_start(std::chrono::steady_clock::now()) {}
+
+  ~ScopedTimingProbe() {
+    if (!timingProbesEnabled()) {
+      return;
+    }
+    const auto end = std::chrono::steady_clock::now();
+    const auto elapsedMs =
+        std::chrono::duration<double, std::milli>(end - m_start).count();
+    std::fprintf(stderr, "[timing] %s ms=%.3f\n", m_label.toUtf8().constData(),
+                 elapsedMs);
+  }
+
+private:
+  QString m_label;
+  std::chrono::steady_clock::time_point m_start;
+};
+
 QString firstErrorMessage(const QVector<ParserError> &errors,
-                         const QString &fallback) {
+                          const QString &fallback) {
   if (errors.isEmpty()) {
     return fallback;
   }
   return errors[0].message;
 }
 
-ServiceFailure toFailure(const SpectralFileService::SpectrumResult &result) {
+ServiceFailure
+toFailure(const SpectralFileService::SpectrumNativeResult &result) {
   ServiceFailure failure;
   failure.errors = result.errors;
   failure.domain = ParserDomain::Spe;
@@ -37,7 +67,7 @@ void SpectrumData::loadFile(const QString &filePath) {
   clearError();
   clearWarning();
   setLoading(true);
-  m_pendingRequestId = m_fileService->loadSpeAsync(filePath);
+  m_pendingRequestId = m_fileService->loadSpeNativeAsync(filePath);
 }
 
 SpectralFileService *SpectrumData::fileService() const { return m_fileService; }
@@ -53,14 +83,14 @@ void SpectrumData::setFileService(SpectralFileService *service) {
   }
 
   if (m_fileService) {
-    disconnect(m_fileService, &SpectralFileService::speLoaded, this,
+    disconnect(m_fileService, &SpectralFileService::speNativeLoaded, this,
                &SpectrumData::onSpeLoaded);
   }
 
   m_fileService = service;
 
   if (m_fileService) {
-    connect(m_fileService, &SpectralFileService::speLoaded, this,
+    connect(m_fileService, &SpectralFileService::speNativeLoaded, this,
             &SpectrumData::onSpeLoaded);
   }
 
@@ -68,14 +98,16 @@ void SpectrumData::setFileService(SpectralFileService *service) {
 }
 
 void SpectrumData::onSpeLoaded(
-    const SpectralFileService::SpectrumResult &result) {
+    const SpectralFileService::SpectrumNativeResult &result) {
+  ScopedTimingProbe timing("SpectrumData::onSpeLoaded");
+
   if (result.requestId != m_pendingRequestId) {
     return;
   }
 
   setLoading(false);
 
-  if (result.points.isEmpty()) {
+  if (result.intensities.empty()) {
     clearWarning();
     const ServiceFailure failure = toFailure(result);
     if (hasFatalError(failure) || result.errors.isEmpty()) {
@@ -101,12 +133,13 @@ void SpectrumData::onSpeLoaded(
 
   std::vector<double> freqs;
   std::vector<double> intensities;
-  freqs.reserve(static_cast<size_t>(result.points.size()));
-  intensities.reserve(static_cast<size_t>(result.points.size()));
+  freqs.reserve(result.intensities.size());
+  intensities.reserve(result.intensities.size());
 
-  for (const auto &point : result.points) {
-    freqs.push_back(point.frequencyMHz);
-    intensities.push_back(point.intensity);
+  for (size_t i = 0; i < result.intensities.size(); ++i) {
+    freqs.push_back(result.fStartMHz +
+                    static_cast<double>(i) * result.fIncrMHz);
+    intensities.push_back(static_cast<double>(result.intensities[i]));
   }
 
   decimate(freqs, intensities);

@@ -52,7 +52,7 @@ signals:
   void fileServiceChanged();
 
 private slots:
-  void onSpeLoaded(const SpectralFileService::SpectrumResult &result);
+  void onSpeLoaded(const SpectralFileService::SpectrumNativeResult &result);
 
 private:
   std::vector<double> m_xData;

@@ -84,13 +84,11 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
   SECTION("SpectrumData warning state") {
     SpectrumData spectrum;
 
-    SpectralFileService::SpectrumResult result;
+    SpectralFileService::SpectrumNativeResult result;
     result.requestId = 0;
-
-    SpectralFileService::SpectrumPoint point;
-    point.frequencyMHz = 100.0;
-    point.intensity = 1.0;
-    result.points.push_back(point);
+    result.fStartMHz = 100.0;
+    result.fIncrMHz = 0.5;
+    result.intensities.push_back(1);
 
     ParserError warning;
     warning.code = ParserErrorCode::InvalidHeader;
@@ -101,7 +99,7 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
 
     const bool invoked = QMetaObject::invokeMethod(
         &spectrum, "onSpeLoaded", Qt::DirectConnection,
-        Q_ARG(SpectralFileService::SpectrumResult, result));
+        Q_ARG(SpectralFileService::SpectrumNativeResult, result));
     REQUIRE(invoked);
 
     CHECK(spectrum.hasWarning());
@@ -112,16 +110,15 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
   SECTION("CatalogData warning state") {
     CatalogData catalog;
 
-    SpectralFileService::CatalogResult result;
+    SpectralFileService::CatalogNativeResult result;
     result.requestId = 0;
 
-    SpectralFileService::CatalogLine line;
+    pickett::CatRecord line;
     line.freq = 100.0;
     line.err = 0.0;
     line.lgint = -1.0;
     line.elo = 0.0;
-    line.qn.resize(12);
-    result.lines.push_back(line);
+    result.records.push_back(line);
 
     ParserError warning;
     warning.code = ParserErrorCode::InvalidRecord;
@@ -132,7 +129,7 @@ TEST_CASE("Models surface non-fatal parse warnings", "[model]") {
 
     const bool invoked = QMetaObject::invokeMethod(
         &catalog, "onCatLoaded", Qt::DirectConnection,
-        Q_ARG(SpectralFileService::CatalogResult, result));
+        Q_ARG(SpectralFileService::CatalogNativeResult, result));
     REQUIRE(invoked);
 
     CHECK(catalog.hasWarning());

@@ -3,6 +3,8 @@
 
 #include "errors/parser_error.h"
 #include "errors/service_failure.h"
+#include "parsers/cat_parser.h"
+#include "parsers/spe_parser.h"
 
 #include <QObject>
 #include <QString>
@@ -30,6 +32,18 @@ public:
 
   using SpectrumLoadExpected = ServiceExpected<SpectrumResult>;
 
+  struct SpectrumNativeResult {
+    quint64 requestId = 0;
+    QString sourcePath;
+    double fStartMHz = 0.0;
+    double fEndMHz = 0.0;
+    double fIncrMHz = 0.0;
+    std::vector<int32_t> intensities;
+    QVector<ParserError> errors;
+  };
+
+  using SpectrumNativeLoadExpected = ServiceExpected<SpectrumNativeResult>;
+
   struct CatalogLine {
     double freq = 0.0;
     double err = 0.0;
@@ -51,6 +65,15 @@ public:
 
   using CatalogLoadExpected = ServiceExpected<CatalogResult>;
 
+  struct CatalogNativeResult {
+    quint64 requestId = 0;
+    QString sourcePath;
+    std::vector<pickett::CatRecord> records;
+    QVector<ParserError> errors;
+  };
+
+  using CatalogNativeLoadExpected = ServiceExpected<CatalogNativeResult>;
+
   struct LinLine {
     QVector<int> qn;
     double freq = 0.0;
@@ -70,16 +93,22 @@ public:
   explicit SpectralFileService(QObject *parent = nullptr);
 
   SpectrumLoadExpected loadSpe(const QString &filePath) const;
+  SpectrumNativeLoadExpected loadSpeNative(const QString &filePath) const;
   CatalogLoadExpected loadCat(const QString &filePath) const;
+  CatalogNativeLoadExpected loadCatNative(const QString &filePath) const;
   LinLoadExpected loadLin(const QString &filePath) const;
 
   quint64 loadSpeAsync(const QString &filePath);
+  quint64 loadSpeNativeAsync(const QString &filePath);
   quint64 loadCatAsync(const QString &filePath);
+  quint64 loadCatNativeAsync(const QString &filePath);
   quint64 loadLinAsync(const QString &filePath);
 
 signals:
   void speLoaded(const SpectralFileService::SpectrumResult &result);
+  void speNativeLoaded(const SpectralFileService::SpectrumNativeResult &result);
   void catLoaded(const SpectralFileService::CatalogResult &result);
+  void catNativeLoaded(const SpectralFileService::CatalogNativeResult &result);
   void linLoaded(const SpectralFileService::LinResult &result);
 
 private:
@@ -88,8 +117,10 @@ private:
 
 Q_DECLARE_METATYPE(SpectralFileService::SpectrumPoint)
 Q_DECLARE_METATYPE(SpectralFileService::SpectrumResult)
+Q_DECLARE_METATYPE(SpectralFileService::SpectrumNativeResult)
 Q_DECLARE_METATYPE(SpectralFileService::CatalogLine)
 Q_DECLARE_METATYPE(SpectralFileService::CatalogResult)
+Q_DECLARE_METATYPE(SpectralFileService::CatalogNativeResult)
 Q_DECLARE_METATYPE(SpectralFileService::LinLine)
 Q_DECLARE_METATYPE(SpectralFileService::LinResult)
 

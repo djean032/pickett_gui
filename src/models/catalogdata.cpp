@@ -3,19 +3,49 @@
 #include "errors/service_failure.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
 
 namespace {
 
+bool timingProbesEnabled() {
+  static const bool enabled = qEnvironmentVariableIntValue(
+                                  "PICKETT_TIMING_PROBES") > 0;
+  return enabled;
+}
+
+class ScopedTimingProbe {
+public:
+  explicit ScopedTimingProbe(QString label)
+      : m_label(std::move(label)), m_start(std::chrono::steady_clock::now()) {}
+
+  ~ScopedTimingProbe() {
+    if (!timingProbesEnabled()) {
+      return;
+    }
+    const auto end = std::chrono::steady_clock::now();
+    const auto elapsedMs =
+        std::chrono::duration<double, std::milli>(end - m_start).count();
+    std::fprintf(stderr, "[timing] %s ms=%.3f\n", m_label.toUtf8().constData(),
+                 elapsedMs);
+  }
+
+private:
+  QString m_label;
+  std::chrono::steady_clock::time_point m_start;
+};
+
 QString firstErrorMessage(const QVector<ParserError> &errors,
-                         const QString &fallback) {
+                          const QString &fallback) {
   if (errors.isEmpty()) {
     return fallback;
   }
   return errors[0].message;
 }
 
-ServiceFailure toFailure(const SpectralFileService::CatalogResult &result) {
+ServiceFailure
+toFailure(const SpectralFileService::CatalogNativeResult &result) {
   ServiceFailure failure;
   failure.errors = result.errors;
   failure.domain = ParserDomain::Cat;
@@ -37,7 +67,7 @@ void CatalogData::loadFile(const QString &filePath) {
   clearError();
   clearWarning();
   setLoading(true);
-  m_pendingRequestId = m_fileService->loadCatAsync(filePath);
+  m_pendingRequestId = m_fileService->loadCatNativeAsync(filePath);
 }
 
 void CatalogData::setFileService(SpectralFileService *service) {
@@ -46,14 +76,14 @@ void CatalogData::setFileService(SpectralFileService *service) {
   }
 
   if (m_fileService) {
-    disconnect(m_fileService, &SpectralFileService::catLoaded, this,
+    disconnect(m_fileService, &SpectralFileService::catNativeLoaded, this,
                &CatalogData::onCatLoaded);
   }
 
   m_fileService = service;
 
   if (m_fileService) {
-    connect(m_fileService, &SpectralFileService::catLoaded, this,
+    connect(m_fileService, &SpectralFileService::catNativeLoaded, this,
             &CatalogData::onCatLoaded);
   }
 
@@ -61,14 +91,16 @@ void CatalogData::setFileService(SpectralFileService *service) {
 }
 
 void CatalogData::onCatLoaded(
-    const SpectralFileService::CatalogResult &result) {
+    const SpectralFileService::CatalogNativeResult &result) {
+  ScopedTimingProbe timing("CatalogData::onCatLoaded");
+
   if (result.requestId != m_pendingRequestId) {
     return;
   }
 
   setLoading(false);
 
-  if (result.lines.isEmpty()) {
+  if (result.records.empty()) {
     clearWarning();
     const ServiceFailure failure = toFailure(result);
     if (hasFatalError(failure) || result.errors.isEmpty()) {
@@ -92,27 +124,7 @@ void CatalogData::onCatLoaded(
     clearWarning();
   }
 
-  m_records.clear();
-  m_records.reserve(static_cast<size_t>(result.lines.size()));
-  for (const auto &line : result.lines) {
-    pickett::CatRecord record;
-    record.freq = line.freq;
-    record.err = line.err;
-    record.lgint = line.lgint;
-    record.elo = line.elo;
-    record.dr = line.dr;
-    record.gup = line.gup;
-    record.tag = line.tag;
-    record.qnfmt = line.qnfmt;
-    for (int i = 0; i < 12; ++i) {
-      if (i < line.qn.size()) {
-        record.qn[i] = line.qn[i];
-      } else {
-        record.qn[i] = 0;
-      }
-    }
-    m_records.push_back(record);
-  }
+  m_records = result.records;
 
   if (m_records.empty()) {
     return;

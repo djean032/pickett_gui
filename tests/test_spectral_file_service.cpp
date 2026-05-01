@@ -56,11 +56,30 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
     CHECK(result->requestId == 0);
   }
 
+  SECTION("SPE native success") {
+    const auto result = service.loadSpeNative(
+        testDataPath("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
+
+    REQUIRE(result.has_value());
+    CHECK(!result->intensities.empty());
+    CHECK(result->errors.isEmpty());
+    CHECK(result->requestId == 0);
+  }
+
   SECTION("CAT success") {
     const auto result = service.loadCat(testDataPath("cyanomethcycloprop.cat"));
 
     REQUIRE(result.has_value());
     CHECK(!result->lines.isEmpty());
+    CHECK(result->errors.isEmpty());
+    CHECK(result->requestId == 0);
+  }
+
+  SECTION("CAT native success") {
+    const auto result = service.loadCatNative(testDataPath("cyanomethcycloprop.cat"));
+
+    REQUIRE(result.has_value());
+    CHECK(!result->records.empty());
     CHECK(result->errors.isEmpty());
     CHECK(result->requestId == 0);
   }
@@ -84,6 +103,19 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
     CHECK(result.error().domain == ParserDomain::Common);
   }
 
+  SECTION("SPE native failure") {
+    const auto legacy = service.loadSpe("nonexistent_file.spe");
+    const auto native = service.loadSpeNative("nonexistent_file.spe");
+
+    CHECK(!native.has_value());
+    CHECK(!legacy.has_value());
+    REQUIRE(!native.error().errors.isEmpty());
+    REQUIRE(!legacy.error().errors.isEmpty());
+    CHECK(native.error().errors[0].code == legacy.error().errors[0].code);
+    CHECK(native.error().errors[0].domain == legacy.error().errors[0].domain);
+    CHECK(native.error().domain == legacy.error().domain);
+  }
+
   SECTION("CAT failure") {
     const auto result = service.loadCat("nonexistent_file.cat");
 
@@ -92,6 +124,19 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
     CHECK(result.error().errors[0].code == ParserErrorCode::FileNotFound);
     CHECK(result.error().errors[0].domain == ParserDomain::Common);
     CHECK(result.error().domain == ParserDomain::Common);
+  }
+
+  SECTION("CAT native failure") {
+    const auto legacy = service.loadCat("nonexistent_file.cat");
+    const auto native = service.loadCatNative("nonexistent_file.cat");
+
+    CHECK(!native.has_value());
+    CHECK(!legacy.has_value());
+    REQUIRE(!native.error().errors.isEmpty());
+    REQUIRE(!legacy.error().errors.isEmpty());
+    CHECK(native.error().errors[0].code == legacy.error().errors[0].code);
+    CHECK(native.error().errors[0].domain == legacy.error().errors[0].domain);
+    CHECK(native.error().domain == legacy.error().domain);
   }
 
   SECTION("LIN failure") {
@@ -119,6 +164,25 @@ TEST_CASE("SpectralFileService synchronous loading", "[service]") {
     CHECK(result.error().errors[0].domain == ParserDomain::Spe);
     CHECK(result.error().domain == ParserDomain::Spe);
   }
+
+  SECTION("SPE native invalid format maps to typed domain error") {
+    const QString invalidPath = testDataPath("service_invalid_tiny_native.spe");
+    {
+      std::ofstream out(invalidPath.toStdString(), std::ios::binary);
+      out.write("abc", 3);
+    }
+
+    const auto legacy = service.loadSpe(invalidPath);
+    const auto native = service.loadSpeNative(invalidPath);
+
+    CHECK(!native.has_value());
+    CHECK(!legacy.has_value());
+    REQUIRE(!native.error().errors.isEmpty());
+    REQUIRE(!legacy.error().errors.isEmpty());
+    CHECK(native.error().errors[0].code == legacy.error().errors[0].code);
+    CHECK(native.error().errors[0].domain == legacy.error().errors[0].domain);
+    CHECK(native.error().domain == legacy.error().domain);
+  }
 }
 
 TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
@@ -143,6 +207,24 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
     CHECK(received.errors.isEmpty());
   }
 
+  SECTION("SPE native success") {
+    bool done = false;
+    SpectralFileService::SpectrumNativeResult received;
+    QObject::connect(&service, &SpectralFileService::speNativeLoaded,
+                     [&](const SpectralFileService::SpectrumNativeResult &result) {
+                       received = result;
+                       done = true;
+                     });
+
+    const quint64 requestId = service.loadSpeNativeAsync(
+        testDataPath("cyanomethylenecyclopropane_235-500GHz_bin.spe"));
+
+    REQUIRE(waitForCondition([&]() { return done; }, 120000));
+    CHECK(received.requestId == requestId);
+    CHECK(!received.intensities.empty());
+    CHECK(received.errors.isEmpty());
+  }
+
   SECTION("CAT success") {
     bool done = false;
     SpectralFileService::CatalogResult received;
@@ -157,6 +239,23 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
     REQUIRE(waitForCondition([&]() { return done; }, 10000));
     CHECK(received.requestId == requestId);
     CHECK(!received.lines.isEmpty());
+    CHECK(received.errors.isEmpty());
+  }
+
+  SECTION("CAT native success") {
+    bool done = false;
+    SpectralFileService::CatalogNativeResult received;
+    QObject::connect(&service, &SpectralFileService::catNativeLoaded,
+                     [&](const SpectralFileService::CatalogNativeResult &result) {
+                       received = result;
+                       done = true;
+                     });
+
+    const quint64 requestId = service.loadCatNativeAsync(testDataPath("cyanomethcycloprop.cat"));
+
+    REQUIRE(waitForCondition([&]() { return done; }, 10000));
+    CHECK(received.requestId == requestId);
+    CHECK(!received.records.empty());
     CHECK(received.errors.isEmpty());
   }
 
@@ -197,6 +296,26 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
     CHECK(received.sourcePath == QStringLiteral("nonexistent_file.spe"));
   }
 
+  SECTION("SPE native failure") {
+    bool done = false;
+    SpectralFileService::SpectrumNativeResult received;
+    QObject::connect(&service, &SpectralFileService::speNativeLoaded,
+                     [&](const SpectralFileService::SpectrumNativeResult &result) {
+                       received = result;
+                       done = true;
+                     });
+
+    const quint64 requestId = service.loadSpeNativeAsync("nonexistent_file.spe");
+
+    REQUIRE(waitForCondition([&]() { return done; }, 5000));
+    CHECK(received.requestId == requestId);
+    CHECK(received.intensities.empty());
+    REQUIRE(!received.errors.isEmpty());
+    CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
+    CHECK(received.errors[0].domain == ParserDomain::Common);
+    CHECK(received.sourcePath == QStringLiteral("nonexistent_file.spe"));
+  }
+
   SECTION("CAT failure") {
     bool done = false;
     SpectralFileService::CatalogResult received;
@@ -211,6 +330,26 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
     CHECK(received.lines.isEmpty());
+    REQUIRE(!received.errors.isEmpty());
+    CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
+    CHECK(received.errors[0].domain == ParserDomain::Common);
+    CHECK(received.sourcePath == QStringLiteral("nonexistent_file.cat"));
+  }
+
+  SECTION("CAT native failure") {
+    bool done = false;
+    SpectralFileService::CatalogNativeResult received;
+    QObject::connect(&service, &SpectralFileService::catNativeLoaded,
+                     [&](const SpectralFileService::CatalogNativeResult &result) {
+                       received = result;
+                       done = true;
+                     });
+
+    const quint64 requestId = service.loadCatNativeAsync("nonexistent_file.cat");
+
+    REQUIRE(waitForCondition([&]() { return done; }, 5000));
+    CHECK(received.requestId == requestId);
+    CHECK(received.records.empty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::FileNotFound);
     CHECK(received.errors[0].domain == ParserDomain::Common);
@@ -257,6 +396,31 @@ TEST_CASE("SpectralFileService asynchronous loading", "[service]") {
     REQUIRE(waitForCondition([&]() { return done; }, 5000));
     CHECK(received.requestId == requestId);
     CHECK(received.points.isEmpty());
+    REQUIRE(!received.errors.isEmpty());
+    CHECK(received.errors[0].code == ParserErrorCode::InvalidFormat);
+    CHECK(received.errors[0].domain == ParserDomain::Spe);
+  }
+
+  SECTION("SPE native invalid format async maps to typed domain error") {
+    const QString invalidPath = testDataPath("service_invalid_tiny_async_native.spe");
+    {
+      std::ofstream out(invalidPath.toStdString(), std::ios::binary);
+      out.write("xyz", 3);
+    }
+
+    bool done = false;
+    SpectralFileService::SpectrumNativeResult received;
+    QObject::connect(&service, &SpectralFileService::speNativeLoaded,
+                     [&](const SpectralFileService::SpectrumNativeResult &result) {
+                       received = result;
+                       done = true;
+                     });
+
+    const quint64 requestId = service.loadSpeNativeAsync(invalidPath);
+
+    REQUIRE(waitForCondition([&]() { return done; }, 5000));
+    CHECK(received.requestId == requestId);
+    CHECK(received.intensities.empty());
     REQUIRE(!received.errors.isEmpty());
     CHECK(received.errors[0].code == ParserErrorCode::InvalidFormat);
     CHECK(received.errors[0].domain == ParserDomain::Spe);

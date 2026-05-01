@@ -50,7 +50,7 @@ signals:
   void fileServiceChanged();
 
 private slots:
-  void onCatLoaded(const SpectralFileService::CatalogResult &result);
+  void onCatLoaded(const SpectralFileService::CatalogNativeResult &result);
 
 private:
   std::vector<pickett::CatRecord> m_records;

@@ -11,8 +11,40 @@
 #include <QtConcurrent/QtConcurrentRun>
 
 #include <atomic>
+#include <chrono>
+#include <cstdio>
 
 namespace {
+
+bool timingProbesEnabled() {
+  static const bool enabled = qEnvironmentVariableIntValue(
+                                  "PICKETT_TIMING_PROBES") > 0;
+  return enabled;
+}
+
+class ScopedTimingProbe {
+public:
+  ScopedTimingProbe(QString label, QString sourcePath)
+      : m_label(std::move(label)), m_sourcePath(std::move(sourcePath)),
+        m_start(std::chrono::steady_clock::now()) {}
+
+  ~ScopedTimingProbe() {
+    if (!timingProbesEnabled()) {
+      return;
+    }
+    const auto end = std::chrono::steady_clock::now();
+    const auto elapsedMs =
+        std::chrono::duration<double, std::milli>(end - m_start).count();
+    std::fprintf(stderr, "[timing] %s path=%s ms=%.3f\n",
+                 m_label.toUtf8().constData(), m_sourcePath.toUtf8().constData(),
+                 elapsedMs);
+  }
+
+private:
+  QString m_label;
+  QString m_sourcePath;
+  std::chrono::steady_clock::time_point m_start;
+};
 
 using ErrorCode = ParserErrorCode;
 using Domain = ParserDomain;
@@ -221,10 +253,14 @@ SpectralFileService::SpectralFileService(QObject *parent) : QObject(parent) {
       "SpectralFileService::SpectrumPoint");
   qRegisterMetaType<SpectralFileService::SpectrumResult>(
       "SpectralFileService::SpectrumResult");
+  qRegisterMetaType<SpectralFileService::SpectrumNativeResult>(
+      "SpectralFileService::SpectrumNativeResult");
   qRegisterMetaType<SpectralFileService::CatalogLine>(
       "SpectralFileService::CatalogLine");
   qRegisterMetaType<SpectralFileService::CatalogResult>(
       "SpectralFileService::CatalogResult");
+  qRegisterMetaType<SpectralFileService::CatalogNativeResult>(
+      "SpectralFileService::CatalogNativeResult");
   qRegisterMetaType<SpectralFileService::LinLine>(
       "SpectralFileService::LinLine");
   qRegisterMetaType<SpectralFileService::LinResult>(
@@ -284,12 +320,41 @@ toLegacyLinResult(const SpectralFileService::LinLoadExpected &expected) {
   return result;
 }
 
+SpectralFileService::CatalogNativeResult toLegacyCatalogNativeResult(
+    const SpectralFileService::CatalogNativeLoadExpected &expected) {
+  SpectralFileService::CatalogNativeResult result;
+  if (expected.has_value()) {
+    result = expected.value();
+    return result;
+  }
+
+  const ServiceFailure &failure = expected.error();
+  result.sourcePath = failure.sourcePath;
+  result.errors = failure.errors;
+  return result;
+}
+
+SpectralFileService::SpectrumNativeResult toLegacySpectrumNativeResult(
+    const SpectralFileService::SpectrumNativeLoadExpected &expected) {
+  SpectralFileService::SpectrumNativeResult result;
+  if (expected.has_value()) {
+    result = expected.value();
+    return result;
+  }
+
+  const ServiceFailure &failure = expected.error();
+  result.sourcePath = failure.sourcePath;
+  result.errors = failure.errors;
+  return result;
+}
+
 } // namespace
 
 SpectralFileService::SpectrumLoadExpected
 SpectralFileService::loadSpe(const QString &filePath) const {
   SpectrumResult result;
   result.sourcePath = normalizePath(filePath);
+  ScopedTimingProbe timing("SpectralFileService::loadSpe", result.sourcePath);
 
   if (!validateReadablePath(result.sourcePath, result.errors)) {
     return std::unexpected(toFailure(result.errors, Domain::Common,
@@ -342,6 +407,7 @@ SpectralFileService::CatalogLoadExpected
 SpectralFileService::loadCat(const QString &filePath) const {
   CatalogResult result;
   result.sourcePath = normalizePath(filePath);
+  ScopedTimingProbe timing("SpectralFileService::loadCat", result.sourcePath);
 
   if (!validateReadablePath(result.sourcePath, result.errors)) {
     return std::unexpected(toFailure(result.errors, Domain::Common,
@@ -391,6 +457,52 @@ SpectralFileService::loadCat(const QString &filePath) const {
     result.lines.push_back(line);
   }
 
+  return result;
+}
+
+SpectralFileService::SpectrumNativeLoadExpected
+SpectralFileService::loadSpeNative(const QString &filePath) const {
+  SpectrumNativeResult result;
+  result.sourcePath = normalizePath(filePath);
+  ScopedTimingProbe timing("SpectralFileService::loadSpeNative",
+                           result.sourcePath);
+
+  if (!validateReadablePath(result.sourcePath, result.errors)) {
+    return std::unexpected(toFailure(result.errors, Domain::Common,
+                                     result.sourcePath));
+  }
+
+  auto parsed = pickett::SpeParser::parseFile(result.sourcePath.toStdString());
+  if (!parsed.has_value()) {
+    appendParserErrors(parsed.error(), result.errors, Domain::Spe,
+                       result.sourcePath, false);
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(
+          makeError(ErrorCode::ParseFailed, "SPE parsing failed", Domain::Spe,
+                    "spe", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Spe,
+                                     result.sourcePath));
+  }
+
+  auto parsedValue = std::move(parsed.value());
+  appendParserErrors(parsedValue.errors, result.errors, Domain::Spe,
+                     result.sourcePath, true);
+
+  if (parsedValue.npts <= 0 || parsedValue.intensities.empty()) {
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(
+          makeError(ErrorCode::EmptyData, "No spectral data points found",
+                    Domain::Spe, "spe", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Spe,
+                                     result.sourcePath));
+  }
+
+  result.fStartMHz = parsedValue.footer.fstart;
+  result.fEndMHz = parsedValue.footer.fend;
+  result.fIncrMHz = parsedValue.footer.fincr;
+  result.intensities = std::move(parsedValue.intensities);
   return result;
 }
 
@@ -445,6 +557,49 @@ SpectralFileService::loadLin(const QString &filePath) const {
   return result;
 }
 
+SpectralFileService::CatalogNativeLoadExpected
+SpectralFileService::loadCatNative(const QString &filePath) const {
+  CatalogNativeResult result;
+  result.sourcePath = normalizePath(filePath);
+  ScopedTimingProbe timing("SpectralFileService::loadCatNative",
+                           result.sourcePath);
+
+  if (!validateReadablePath(result.sourcePath, result.errors)) {
+    return std::unexpected(toFailure(result.errors, Domain::Common,
+                                     result.sourcePath));
+  }
+
+  auto parsed = pickett::CatParser::parseFile(result.sourcePath.toStdString());
+  if (!parsed.has_value()) {
+    appendParserErrors(parsed.error(), result.errors, Domain::Cat,
+                       result.sourcePath, false);
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(makeError(ErrorCode::ParseFailed,
+                                        "CAT parsing failed", Domain::Cat,
+                                        "cat", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Cat,
+                                     result.sourcePath));
+  }
+
+  auto parsedValue = std::move(parsed.value());
+  appendParserErrors(parsedValue.errors, result.errors, Domain::Cat,
+                     result.sourcePath, true);
+
+  if (parsedValue.records.empty()) {
+    if (result.errors.isEmpty()) {
+      result.errors.push_back(
+          makeError(ErrorCode::EmptyData, "No catalog lines found", Domain::Cat,
+                    "cat", result.sourcePath, 0, true));
+    }
+    return std::unexpected(toFailure(result.errors, Domain::Cat,
+                                     result.sourcePath));
+  }
+
+  result.records = std::move(parsedValue.records);
+  return result;
+}
+
 quint64 SpectralFileService::loadSpeAsync(const QString &filePath) {
   const quint64 requestId = nextRequestId();
 
@@ -483,6 +638,25 @@ quint64 SpectralFileService::loadCatAsync(const QString &filePath) {
   return requestId;
 }
 
+quint64 SpectralFileService::loadSpeNativeAsync(const QString &filePath) {
+  const quint64 requestId = nextRequestId();
+
+  auto *watcher = new QFutureWatcher<SpectrumNativeResult>(this);
+  connect(watcher, &QFutureWatcher<SpectrumNativeResult>::finished, this,
+          [this, watcher, requestId]() {
+            SpectrumNativeResult result = watcher->result();
+            result.requestId = requestId;
+            emit speNativeLoaded(result);
+            watcher->deleteLater();
+          });
+
+  watcher->setFuture(QtConcurrent::run([this, filePath]() {
+    return toLegacySpectrumNativeResult(loadSpeNative(filePath));
+  }));
+
+  return requestId;
+}
+
 quint64 SpectralFileService::loadLinAsync(const QString &filePath) {
   const quint64 requestId = nextRequestId();
 
@@ -497,6 +671,25 @@ quint64 SpectralFileService::loadLinAsync(const QString &filePath) {
 
   watcher->setFuture(QtConcurrent::run([this, filePath]() {
     return toLegacyLinResult(loadLin(filePath));
+  }));
+
+  return requestId;
+}
+
+quint64 SpectralFileService::loadCatNativeAsync(const QString &filePath) {
+  const quint64 requestId = nextRequestId();
+
+  auto *watcher = new QFutureWatcher<CatalogNativeResult>(this);
+  connect(watcher, &QFutureWatcher<CatalogNativeResult>::finished, this,
+          [this, watcher, requestId]() {
+            CatalogNativeResult result = watcher->result();
+            result.requestId = requestId;
+            emit catNativeLoaded(result);
+            watcher->deleteLater();
+          });
+
+  watcher->setFuture(QtConcurrent::run([this, filePath]() {
+    return toLegacyCatalogNativeResult(loadCatNative(filePath));
   }));
 
   return requestId;
